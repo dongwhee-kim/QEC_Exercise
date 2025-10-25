@@ -3,15 +3,31 @@ from collections import Counter
 from qiskit.circuit import Gate
 import sys
 
-def error_correction_func (qc, syndrome_value, error_type='X'):
+def error_correction_func (qc, error_type='X'):
+    # QuantumCircuit(5,3)
+    # 3bit classical register -> c[0] = c0, c[1] = c1, c[2] = final result (q0)
+    c = qc.cregs[0]
 
     if error_type=='X':
-        qc.cx(0,1)
-        qc.cx(0,2)
+        ######################################
+        ######################################
+
+
+        ############# Fill the code ##########
+
+
+        ######################################
+        ######################################
     elif error_type=='Z':
-        qc.cx(0,1)
-        qc.cx(0,2)
-        qc.h([0, 1, 2]) # applying hadamard gate on q0, q1, q2
+        ######################################
+        ######################################
+
+
+        ############# Fill the code ##########
+
+
+        ######################################
+        ######################################
     else:
         print("Wrong Error Type")
         sys.exit(1)

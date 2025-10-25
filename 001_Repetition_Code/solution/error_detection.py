@@ -12,26 +12,32 @@ import sys
 def error_detection_func (qc, error_type='X'):
 
     if error_type=='X':
-        ######################################
-        ######################################
+        # S0 = Z0 Z1
+        qc.cx(0,3)
+        qc.cx(1,3)
 
+        # S1 = Z1 Z2
+        qc.cx(1,4)
+        qc.cx(2,4)
 
-        ############# Fill the code ##########
-
-
-        ######################################
-        ######################################
+        qc.measure(3,0) # c0
+        qc.measure(4,1) # c1
 
     elif error_type=='Z':
-        ######################################
-        ######################################
+        qc.h([3, 4]) # applying hadamard gate on q3, q4
+        # S0 = X0 X1
+        qc.cx(3,0)
+        qc.cx(3,1)
 
+        # S1 = X1 X2
+        qc.cx(4,1)
+        qc.cx(4,2)
 
-        ############# Fill the code ##########
+        qc.h([3, 4]) # applying hadamard gate on q3, q4
 
+        qc.measure(3,0) # c0
+        qc.measure(4,1) # c1
 
-        ######################################
-        ######################################
     else:
         print("Wrong Error Type")
         sys.exit(1)
