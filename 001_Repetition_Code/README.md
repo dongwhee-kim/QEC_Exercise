@@ -6,14 +6,14 @@
 # Overview
 1) Repetition Code (X Error)
 ![Overview_Bit_Error](images/Overview_Bit_Error.png)
-2) Repetition Code (Y Error)
+2) Repetition Code (Z Error)
 ![Overview_Phase_Error](images/Overview_Phase_Error.png)
 
 # To do
 - Fill the blank of the code.
 
 # Getting Started
-- $ python Repetition_Code.py
+- $ python main.py
 
 # Hint
 - It can detect and correct single bit flip error.
