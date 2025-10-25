@@ -18,7 +18,7 @@
 # Getting Started
 - $ python main.py
 
-# Answer
+# Answer (Solution Folder)
 - NE: ≈ 250
 - CE: ≈ 750
 - UE: 0
