@@ -1,7 +1,9 @@
 # Repetition Code (Three-qubit Error Correction Code)
 
 # Objective
-- Understand the steps for Repetition Code, the simplest quantum error correction code, where a single qubit is encoded into multiple qubits by repeating it multiple times.
+- Understand the Repetition Code, the simplest quantum error correction code, where a single qubit is encoded into multiple qubits by repeating it multiple times.
+- Perform a **Monte Carlo** analysis to classify outcomes into three categories: No Error (NE), Correctable Error (CE), and Uncorrectable Error (UE).
+- Understand the difference between correcting bit-flip (X) vs. phase-flip (Z) errors.
 
 # Prerequisite
 - Read the foundational paper for the three-qubit bit-flip code **[1]**.
