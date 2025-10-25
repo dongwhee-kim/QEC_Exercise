@@ -13,7 +13,8 @@ PACKAGES = [
     "pylatexenc",
     "qiskit-aer",
     "numpy",
-    "qiskit-ibm-runtime"  # Corrected from 'qiskit_ibm_runtime'
+    "qiskit-ibm-runtime",  # Corrected from 'qiskit_ibm_runtime'
+    "tqdm"  # <--- tqdm 추가
 ]
 
 # --------------------------

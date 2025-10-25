@@ -1,4 +1,4 @@
 # Color Code
 
 # Objective
-- Understand the Color Code, 
+- Understand the Color Code.
