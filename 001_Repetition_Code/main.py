@@ -46,6 +46,9 @@ def main():
         # 6. Result report
         qc_main.measure(0, 2) # q0 -> c2 (classical register)
 
+        # Circuit Print
+        # qc_main.draw()
+
         # 7. Run Simulator
         trans_qc_main = transpile(qc_main, simulator)
         result = simulator.run(trans_qc_main, shots=1).result() # one shot (ideal case)
@@ -102,6 +105,9 @@ def main():
 
         # 6. Result report
         qc_main.measure(0, 2) # q0 -> c2 (classical register)
+
+        # Circuit Print
+        # qc_main.draw()
 
         # 7. Run Simulator
         trans_qc_main = transpile(qc_main, simulator)

@@ -8,6 +8,9 @@
 - Read the foundational paper for the Shor Code **[1]**.
 
 # Overview
+1) Shor Code
+2) (Hint) Code Concatenation
+![Code_Concatenation](images/Code_Concatenation.png)
 
 # To do
 - Complete the code in the sections marked **Fill the code**.
@@ -18,6 +21,8 @@
 # Answer (Solution Folder)
 
 # Hint
+- It utilizes a code construction technique called **code concatenation**.
+- 
 
 # Additioanl Information (History)
 - The development of quantum error correction faced a significant conceptual hurdle: the **no-cloning theorem**, which states that it is impossible to create an exact copy of an unknown quantum state.
