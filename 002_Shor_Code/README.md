@@ -10,7 +10,7 @@
 # Overview
 1) Shor Code
 2) (Hint) Code Concatenation
-![Code_Concatenation](images/Code_Concatenation.png)
+<img src="images/Code_Concatenation.png" alt="Code_Concatenation" width="50%">
 
 # To do
 - Complete the code in the sections marked **Fill the code**.
