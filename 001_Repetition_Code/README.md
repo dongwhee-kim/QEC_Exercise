@@ -28,6 +28,8 @@
 If the result differs from the above, please modify the code accordingly.
 
 # Hint
+- Encoding: Creating a physical state that represents the logical state.
+- Decoding: Determining which logical state is encoded in the physical state.
 - X Error: It can detect and correct single bit flip error.
 - Z Error: If you want to correct single phase flip error, add a **Hadamard gate**.
 - It encodes a single logical qubit into three physical qubits by repeating the qubit three times.
