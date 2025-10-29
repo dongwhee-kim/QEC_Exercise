@@ -4,13 +4,11 @@ from qiskit.circuit import Gate
 from qiskit_aer import AerSimulator
 from tqdm import tqdm
 import random
-
-# Import functions for Shor code
-from encoding import encoding_func
-from error_injection import error_injection_func
-from error_detection import error_detection_func
-from error_correction import error_correction_func
-from decoding import decoding_func
+from encoding import *
+from error_injection import *
+from error_detection import *
+from error_correction import *
+from decoding import *
 
 def main():
     # Shor code uses 9 data qubits
@@ -34,7 +32,7 @@ def main():
         qc_main = encoding_func(initial_q0_value) # Create a 17-qubit, 9-classical-bit circuit
 
         # 2. Error Injection
-        error_injection_index = random.choice(Error_Cases)
+        error_injection_index = random.choice(Error_Cases) # None, 0, 1, ... 8
         error_injection_func(qc_main, error_injection_index, error_type=error_type)
         qc_main.barrier()
 

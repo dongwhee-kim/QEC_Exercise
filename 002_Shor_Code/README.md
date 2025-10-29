@@ -3,6 +3,7 @@
 # Objective
 - Understand the Shor Code, the first quantum error correction code, developed by Peter Shor. It encodes one logical qubit into nine physical qubits.
 - Perform a **Monte Carlo** analysis to classify outcomes into three categories: No Error (NE), Correctable Error (CE), and Uncorrectable Error (UE).
+- Understand the Shor Code's challenges, including high redundancy, hard computation [X, Z are easy].
 
 # Prerequisite
 - Read the foundational paper for the Shor Code **[1]**.

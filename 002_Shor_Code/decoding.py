@@ -1,13 +1,10 @@
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 import sys
 
-def decoding_func(qc):
-    """
-    Shor code decoding function
-    Inverse of the encoding function
-    """
-    
-    # 1. Inner code decoding (Bit-flip decoding)
+# Inverse of the encoding function
+def decoding_func(qc): 
+    # 1. Inner code decoding (Phase-flip decoding)
+    # Decode |+++> -> |+> and |---> -> |->
     # Block 1: q0, q1, q2
     qc.cx(0, 2)
     qc.cx(0, 1)
@@ -20,9 +17,12 @@ def decoding_func(qc):
     qc.cx(6, 8)
     qc.cx(6, 7)
     
-    # 2. Outer code decoding (Phase-flip decoding)
+    # Change basis from X to Z
     qc.h([0, 3, 6])
-    
+
+    # 2. Outer code decoding (Bit-flip decoding)
+    # Decode a|000> + b|111> -> a|0> + b|1> (on q0, q3, q6)
     qc.cx(0, 6)
     qc.cx(0, 3)
-
+    
+    # Final logical state is restored to q0
