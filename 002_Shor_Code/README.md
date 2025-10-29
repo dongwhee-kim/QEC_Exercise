@@ -1,7 +1,8 @@
 # 9-qubit Shor Code
 
 # Objective
-- Understand the Shor Code **[1]**, the first quantum error correction code, developed by Peter Shor. It encodes one logical qubit into nine physical qubits.
+- Understand the [[9, 1, 3]] Shor Code **[1]**, the first quantum error correction code, developed by Peter Shor. It encodes one logical qubit into nine physical qubits.
+- Understand the **Calderbank-Shor-Steane (CSS) codes** (e.g., Steane code, toric code, and surface code), the stabilizer codes obtained by combining together certain pairs of classical linear codes.
 - Perform a **Monte Carlo** analysis to classify outcomes into three categories: No Error (NE), Correctable Error (CE), and Uncorrectable Error (UE).
 - Understand the Shor Code's challenges, including high redundancy, hard computation [X, Z are easy].
 
