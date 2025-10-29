@@ -20,7 +20,11 @@
 - $ python main.py
 
 # Answer (Solution Folder)
-- 
+- NE ≈ 143
+- CE ≈ 857
+- UE: 0
+
+If the result differs from the above, please modify the code accordingly.
 
 # Hint
 - Steane Code uses the classical binary [7, 4, 3] Hamming Code to correct for both bit-flip (X) errors and phase-flip (Z) errors.
