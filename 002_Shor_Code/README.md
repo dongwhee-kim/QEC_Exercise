@@ -9,8 +9,10 @@
 - Read the foundational paper for the Shor Code **[1]**.
 
 # Overview
-1) Shor Code
-2) (Hint) Code Concatenation
+1) Shor Code (Single Qubit Error Correction)
+<img src="images/Overview_Shor_Code.png" alt="Shor_Code" width="50%">
+
+2) (Hint) Encoding - Code Concatenation
 <img src="images/Code_Concatenation.png" alt="Code_Concatenation" width="50%">
 
 # To do

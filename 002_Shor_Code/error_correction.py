@@ -3,7 +3,7 @@ from qiskit.circuit import Gate
 import sys
 
 # Correct a 3-qubit bit-flip code block (X errors)
-def _correct_bit_flip_block(qc, c, q_indices, c_indices):
+def error_correction_bit_flip_block(qc, c, q_indices, c_indices):
     # Block 1 [0, 1, 2] / Syndromes [0, 1]
     # Block 2 [3, 4, 5] / Syndromes [2, 3]
     # Block 3 [6, 7, 8] / Syndromes [4, 5]
@@ -36,18 +36,18 @@ def error_correction_func(qc):
     # Apply X gates based on c0~c5 syndrome bits (ZZ)
     
     # Block 1 (q0, q1, q2) / Syndromes (c0, c1)
-    _correct_bit_flip_block(qc, c, [0, 1, 2], [0, 1])
+    error_correction_bit_flip_block(qc, c, [0, 1, 2], [0, 1])
     
     # Block 2 (q3, q4, q5) / Syndromes (c2, c3)
-    _correct_bit_flip_block(qc, c, [3, 4, 5], [2, 3])
+    error_correction_bit_flip_block(qc, c, [3, 4, 5], [2, 3])
     
     # Block 3 (q6, q7, q8) / Syndromes (c4, c5)
-    _correct_bit_flip_block(qc, c, [6, 7, 8], [4, 5])
+    error_correction_bit_flip_block(qc, c, [6, 7, 8], [4, 5])
 
     qc.barrier() # Separate X correction from Z correction
 
     # --- 2. Phase-flip Correction ---
-    # Apply Z gates based on c6, c7 syndrome bits (from X stabilizers)
+    # Apply Z gates based on c6, c7 syndrome bits (XX)
     # This corrects errors on a block-level.
     
     # Syndrome table
