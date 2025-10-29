@@ -1,4 +1,4 @@
-# Shor Code
+# 9-qubit Shor Code
 
 # Objective
 - Understand the Shor Code **[1]**, the first quantum error correction code, developed by Peter Shor. It encodes one logical qubit into nine physical qubits.

@@ -1,4 +1,4 @@
-# Steane Code
+# 7-qubit Steane Code
 
 # Objective
 - Understand the Steane Code, a seven-qubit code that can correct both bit flip and phase flip errors.
