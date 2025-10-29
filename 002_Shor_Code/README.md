@@ -10,8 +10,7 @@
 
 # Overview
 1) Shor Code (Single Qubit Error Correction)
-<img src="images/Overview_Shor_Code.png" alt="Shor_Code" width="50%">
-
+![Overview_Shor_Code](images/Overview_Shor_Code.png)
 2) (Hint) Encoding - Code Concatenation
 <img src="images/Code_Concatenation.png" alt="Code_Concatenation" width="50%">
 
