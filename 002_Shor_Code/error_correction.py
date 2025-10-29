@@ -15,17 +15,15 @@ def error_correction_bit_flip_block(qc, c, q_indices, c_indices):
     # c2c3 = '10' q3 X error correction / '11' q4 X error correction / '01' q5 X error correction
     # c4c5 = '10' q6 X error correction / '11' q7 X error correction / '01' q8 X error correction
 
-    with qc.if_test((c[c_s0], 1)):
-        with qc.if_test((c[c_s1], 0)):
-            qc.x(q_a)
-    
-    with qc.if_test((c[c_s0], 1)):
-        with qc.if_test((c[c_s1], 1)):
-            qc.x(q_b)
-            
-    with qc.if_test((c[c_s0], 0)):
-        with qc.if_test((c[c_s1], 1)):
-            qc.x(q_c)
+    ######################################
+    ######################################
+
+
+    ############# Fill the code ##########
+
+
+    ######################################
+    ######################################
 
 # Shor code error correction function
 # Applies corrections based on the 8 syndrome bits
@@ -35,14 +33,15 @@ def error_correction_func(qc):
     # --- 1. Bit-flip Correction ---
     # Apply X gates based on c0~c5 syndrome bits (ZZ)
     
-    # Block 1 (q0, q1, q2) / Syndromes (c0, c1)
-    error_correction_bit_flip_block(qc, c, [0, 1, 2], [0, 1])
-    
-    # Block 2 (q3, q4, q5) / Syndromes (c2, c3)
-    error_correction_bit_flip_block(qc, c, [3, 4, 5], [2, 3])
-    
-    # Block 3 (q6, q7, q8) / Syndromes (c4, c5)
-    error_correction_bit_flip_block(qc, c, [6, 7, 8], [4, 5])
+    ######################################
+    ######################################
+
+
+    ############# Fill the code ##########
+
+
+    ######################################
+    ######################################
 
     qc.barrier() # Separate X correction from Z correction
 
@@ -53,16 +52,14 @@ def error_correction_func(qc):
     # Syndrome table
     # c6c7 = '10' q0 Z error correction / '11' q3 Z error correction / '01' q6 Z error correction
 
-    with qc.if_test((c[6], 1)):
-        with qc.if_test((c[7], 0)):
-            qc.z(0) # Apply Z_L = Z to Block 1
-            
-    with qc.if_test((c[6], 1)):
-        with qc.if_test((c[7], 1)):
-            qc.z(3) # Apply Z_L = Z to Block 2
-            
-    with qc.if_test((c[6], 0)):
-        with qc.if_test((c[7], 1)):
-            qc.z(6) # Apply Z_L = Z to Block 3
+    ######################################
+    ######################################
+
+
+    ############# Fill the code ##########
+
+
+    ######################################
+    ######################################
 
     return
