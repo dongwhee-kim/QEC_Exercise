@@ -1,7 +1,7 @@
 # 7-qubit Steane Code
 
 # Objective
-- Understand the [[7, 1, 3]] Steane Code, a seven-qubit code that can correct both bit flip and phase flip errors with **fewer redundancy** than [[[9, 1, 3]] Shor Code](https://github.com/dongwhee-kim/QEC_Exercise/tree/main/002_Shor_Code).
+- Understand the [[7, 1, 3]] Steane Code **[1]**, a seven-qubit code that can correct both bit flip and phase flip errors with **fewer redundancy** than [[[9, 1, 3]] Shor Code](https://github.com/dongwhee-kim/QEC_Exercise/tree/main/002_Shor_Code).
 - Understand the relation between [[7, 4, 3] Hamming Code](https://github.com/dongwhee-kim/ECC-exercise/tree/main/01_Basic/01_7_4_Hamming_code) and Steane Code.
 
 # Prerequisite
@@ -30,4 +30,4 @@
 - Steane Code is also a quantum Color Code.
 
 # References
-- **[1]** 
+- **[1]** Steane, Andrew M. "Error correcting codes in quantum theory." Physical Review Letters 77.5 (1996): 793.
