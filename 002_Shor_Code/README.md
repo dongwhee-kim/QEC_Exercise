@@ -1,7 +1,7 @@
 # Shor Code
 
 # Objective
-- Understand the Shor Code, the first quantum error correction code, developed by Peter Shor. It encodes one logical qubit into nine physical qubits.
+- Understand the Shor Code **[1]**, the first quantum error correction code, developed by Peter Shor. It encodes one logical qubit into nine physical qubits.
 - Perform a **Monte Carlo** analysis to classify outcomes into three categories: No Error (NE), Correctable Error (CE), and Uncorrectable Error (UE).
 - Understand the Shor Code's challenges, including high redundancy, hard computation [X, Z are easy].
 
@@ -20,10 +20,17 @@
 - $ python main.py
 
 # Answer (Solution Folder)
+- NE ≈ 100
+- CE ≈ 900
+- UE: 0
+
+If the result differs from the above, please modify the code accordingly.
 
 # Hint
 - It utilizes a code construction technique called **code concatenation**.
-- 
+- It utilizes two-step error correction
+ 1) [Intra-Block] Bit-flip correction
+ 2) [Inter-Block] Phase-flip correction
 
 # Additioanl Information (History)
 - The development of quantum error correction faced a significant conceptual hurdle: the **no-cloning theorem**, which states that it is impossible to create an exact copy of an unknown quantum state.
