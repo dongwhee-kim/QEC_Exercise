@@ -14,25 +14,24 @@ def encoding_func(initial_value='0'):
     qc.barrier()
 
     # 2. Steane code encoding circuit
-    qc.h(0)
-    qc.h(1)
-    qc.h(2)
-    
-    qc.cx(0, 3)
-    qc.cx(0, 5)
-    qc.cx(0, 6)
-    
-    qc.cx(1, 3)
-    qc.cx(1, 4)
-    qc.cx(1, 6)
-    
-    qc.cx(2, 4)
-    qc.cx(2, 5)
-    qc.cx(2, 6)
-    
-    qc.h(3)
+    qc.h(4)
     qc.h(5)
     qc.h(6)
+    
+    qc.cx(0, 1)
+    qc.cx(0, 2)
+    
+    qc.cx(6, 0)
+    qc.cx(6, 1)
+    qc.cx(6, 3)
+    
+    qc.cx(5, 0)
+    qc.cx(5, 2)
+    qc.cx(5, 3)
+    
+    qc.cx(4,1)
+    qc.cx(4,2)
+    qc.cx(4,3)
     
     qc.barrier()
 
