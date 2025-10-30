@@ -6,7 +6,7 @@ import subprocess
 # 1. Target Python version that is compatible with Qiskit
 PYTHON_VERSION = "3.12"
 
-# 2. List of packages to install (typo corrected)
+# 2. List of packages to install
 PACKAGES = [
     "qiskit",
     "matplotlib",
@@ -14,7 +14,8 @@ PACKAGES = [
     "qiskit-aer",
     "numpy",
     "qiskit-ibm-runtime", 
-    "tqdm"
+    "tqdm",
+    "pymatching"
 ]
 
 # --------------------------

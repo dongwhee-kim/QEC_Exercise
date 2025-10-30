@@ -1,90 +1,142 @@
-from qiskit import QuantumCircuit, transpile
+import numpy as np
+import pymatching
+from qiskit import transpile
 from qiskit_aer import AerSimulator
-from collections import Counter
-import random # Re-importing for random distribution
-from qiskit.circuit import Gate
 
-from encoding import *
-from error_injection import *
-from error_detection import *
-from error_correction import *
-from decoding import *
+# Import the circuit-building function
+from circuit_builder import create_qec_circuit
 
-# This main function is MODIFIED for the Surface Code exercise
-# It will NOT correct errors, but will report the SYNDROME for each error
-def run_simulation_observe_syndrome(simulator, error_type, error_index, initial_q0_value='0'):
+def get_parity_check_matrices():
+    """
+    Defines the Parity-Check Matrix (H) for the [[9, 1, 3]] code.
+    This H matrix is the "graph" that MWPM uses.
+    """
+    # H_z: Z-stabilizers (4 stabs x 9 qubits)
+    # This matrix detects X-errors
+    H_z = np.array([
+        [1, 1, 0, 1, 1, 0, 0, 0, 0], # c[0]: Z0 Z1 Z3 Z4
+        [0, 1, 1, 0, 1, 1, 0, 0, 0], # c[1]: Z1 Z2 Z4 Z5
+        [0, 0, 0, 1, 1, 0, 1, 1, 0], # c[2]: Z3 Z4 Z6 Z7
+        [0, 0, 0, 0, 1, 1, 0, 1, 1]  # c[3]: Z4 Z5 Z7 Z8
+    ], dtype=np.uint8)
+
+    # H_x: X-stabilizers (4 stabs x 9 qubits)
+    # This matrix detects Z-errors
+    # For this specific code, H_x is identical to H_z
+    H_x = np.array([
+        [1, 1, 0, 1, 1, 0, 0, 0, 0], # c[4]: X0 X1 X3 X4
+        [0, 1, 1, 0, 1, 1, 0, 0, 0], # c[5]: X1 X2 X4 X5
+        [0, 0, 0, 1, 1, 0, 1, 1, 0], # c[6]: X3 X4 X6 X7
+        [0, 0, 0, 0, 1, 1, 0, 1, 1]  # c[7]: X4 X5 X7 X8
+    ], dtype=np.uint8)
     
-    # 13 data + 12 ancilla = 25 qubits
-    # 12 syndrome + 1 result = 13 classical bits
-    qc = QuantumCircuit(25, 13)
+    return H_z, H_x
 
-    # 1. Encoding
-    encoding_func(qc, initial_q0_value)
-    qc.barrier()
-
-    # 2. Error Injection
-    error_injection_func(qc, error_index, error_type=error_type)
-    qc.barrier()
-
-    # 3. Error Detection
-    # This is the function you will write
-    error_detection_func(qc)
-    qc.barrier()
-
-    # 4. Error Correction - SKIPPED FOR THIS EXERCISE
-    # error_correction_func(qc) 
-    # qc.barrier()
-
-    # 5. Decoding - Not necessary for observing syndromes
-    # decoding_func(qc)
-    # qc.barrier()
+def get_logical_operators():
+    """
+    Defines the Logical Operators for the [[9, 1, 3]] code.
+    We need these to check if a logical error occurred.
+    """
+    # Z_L = Z0 * Z3 * Z6 (any vertical column)
+    Z_logical = np.array([1, 0, 0, 1, 0, 0, 1, 0, 0], dtype=np.uint8)
     
-    # Measure the 12 SYNDROME bits (c[0]...c[11])
-    # We measure them directly at the end for simplicity
-    qc.measure(range(13, 25), range(0, 12)) 
+    # X_L = X0 * X1 * X2 (any horizontal row)
+    X_logical = np.array([1, 1, 1, 0, 0, 0, 0, 0, 0], dtype=np.uint8)
     
-    # Run simulation
-    trans_qc = transpile(qc, simulator)
-    result = simulator.run(trans_qc, shots=1).result()
-    counts = result.get_counts()
-    
-    # Get the single shot result
-    measured_string = list(counts.keys())[0]
-    
-    # Qiskit measures c[12]...c[0] from left to right
-    # We reverse it to show c[0]c[1]...c[11]
-    syndrome_string = measured_string[::-1] 
-    
-    # Format: "Z_S[5..0]  X_S[5..0]"
-    # (c[5]c[4]c[3]c[2]c[1]c[0]) (c[11]c[10]c[9]c[8]c[7]c[6])
-    z_syndrome = syndrome_string[0:6]
-    x_syndrome = syndrome_string[6:12]
-
-    print(f"Error: {error_type} on q[{error_index}]\t-> Syndrome (Z: {z_syndrome} | X: {x_syndrome})")
-
+    return Z_logical, X_logical
 
 def main():
-    # [[13, 1, 3]] Rotated Surface Code
-    # 13 data qubits
-    Error_Cases = [None, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] 
-    iters = 1 # We only run 1 shot for each case
+    print("--- [[9, 1, 3]] Surface Code Simulation with MWPM Decoder ---")
+
+    # 1. Setup Simulator and Classical Code Definitions
     simulator = AerSimulator()
-    initial_q0_value = '0' # The logical state to test
+    H_z, H_x = get_parity_check_matrices()
+    Z_L, X_L = get_logical_operators()
 
-    print("--- Surface Code [[13, 1, 3]] Syndrome Observation ---")
-    print("Goal: Observe which syndrome bits flip for each error.")
-    print("Syndrome Format: (Z_Syndromes c[5]-c[0] | X_Syndromes c[11]-c[6])")
+    # 2. Initialize the MWPM "Matcher" objects from Pymatching
+    # This creates the graph object from the H matrix
+    
+    # *** FIXED HERE ***
+    z_error_matcher = pymatching.Matching(H_z)
+    x_error_matcher = pymatching.Matching(H_x)
+    # *** FIXED HERE ***
+
+    # 3. Define Test Cases
+    # (Error Type, Qubit Index)
+    test_cases = [
+        ('X', 4),  # X-error on q[4] (center) -> flips all 4 Z-syndromes
+        ('X', 1),  # X-error on q[1] -> flips c[0], c[1]
+        ('Z', 7),  # Z-error on q[7] -> flips c[6], c[7]
+        ('Y', 8),  # Y-error on q[8] -> flips c[3] (Z-stab) and c[7] (X-stab)
+        ('X', 0),  # X-error on q[0] (boundary)
+        ('Z', 2),  # Z-error on q[2] (boundary)
+        (None, None) # No error
+    ]
+    
+    print(f"Testing {len(test_cases)} single-qubit error cases...")
     print("-" * 60)
+    
+    num_logical_errors = 0
 
-    # --- Run 'X' errors and observe Z-syndromes ---
-    print("\n[Injecting X Errors (should flip Z-syndromes)]")
-    for error_q in Error_Cases:
-        run_simulation_observe_syndrome(simulator, 'X', error_q, initial_q0_value)
+    for error_type, error_qubit in test_cases:
+        
+        # 4. Create and Run the Quantum Circuit
+        qc = create_qec_circuit(error_type, error_qubit)
+        trans_qc = transpile(qc, simulator)
+        # We run 1 shot and get the 'memory' (the classical bit string)
+        result = simulator.run(trans_qc, shots=1, memory=True).result()
+        syndrome_str = result.get_memory(0)[0] # e.g., '00001100'
+        
+        # Qiskit measures c[7]...c[0], so we reverse it
+        syndrome_str = syndrome_str[::-1] # Now c[0]...c[7]
+        
+        # 5. Classical Post-processing: Parse Syndromes
+        syndrome_bits = np.array([int(s) for s in syndrome_str], dtype=np.uint8)
+        
+        z_syndrome = syndrome_bits[0:4] # For X-errors (c[0]-c[3])
+        x_syndrome = syndrome_bits[4:8] # For Z-errors (c[4]-c[7])
 
-    # --- Run 'Z' errors and observe X-syndromes ---
-    print("\n[Injecting Z Errors (should flip X-syndromes)]")
-    for error_q in Error_Cases:
-        run_simulation_observe_syndrome(simulator, 'Z', error_q, initial_q0_value)
+        # 6. Classical Post-processing: MWPM Decoding
+        # Feed the syndrome to the matcher to get the predicted error
+        predicted_x_error_vec = z_error_matcher.decode(z_syndrome)
+        predicted_z_error_vec = x_error_matcher.decode(x_syndrome)
+
+        # 7. Classical Post-processing: Verification
+        # Create a vector for the error we actually injected
+        injected_x_error_vec = np.zeros(9, dtype=np.uint8)
+        injected_z_error_vec = np.zeros(9, dtype=np.uint8)
+        
+        if error_type:
+            if 'X' in error_type:
+                injected_x_error_vec[error_qubit] = 1
+            if 'Z' in error_type:
+                injected_z_error_vec[error_qubit] = 1
+
+        # The final error is (injected + predicted) mod 2
+        final_x_error = (injected_x_error_vec + predicted_x_error_vec) % 2
+        final_z_error = (injected_z_error_vec + predicted_z_error_vec) % 2
+
+        # 8. Check for Logical Error
+        # A logical error occurs if the *final* error flips the logical state.
+        # This happens if (final_x_error) anti-commutes with (Z_L)
+        # OR (final_z_error) anti-commutes with (X_L).
+        # We check this with a dot product modulo 2.
+        
+        is_x_logical_error = (final_x_error @ Z_L) % 2 != 0
+        is_z_logical_error = (final_z_error @ X_L) % 2 != 0
+        
+        status = "SUCCESS"
+        if is_x_logical_error or is_z_logical_error:
+            status = "FAILURE (Logical Error)"
+            num_logical_errors += 1
+
+        print(f"Test: {str(error_type)} on q[{str(error_qubit)}] | Syndrome (Z|X): {z_syndrome} | {x_syndrome}")
+        print(f"  -> Predicted X Error: {predicted_x_error_vec}")
+        print(f"  -> Predicted Z Error: {predicted_z_error_vec}")
+        print(f"  -> Result: {status}\n")
+
+    print("-" * 60)
+    print(f"Simulation Complete. Total Logical Errors: {num_logical_errors}")
 
 if __name__ == '__main__':
     main()

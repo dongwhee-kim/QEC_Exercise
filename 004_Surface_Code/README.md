@@ -13,6 +13,9 @@
 - Encoding rate: Ratio of logical qubits to physical qubits
 - Decoding complexity: Computational resources required for decoding and error correction
 
+# Regular Surface Code Parameters
+![Regular_Surface_Code_Parameters](images/Regular_Surface_Code_Parameters.png)
+
 # To do
 - Complete the code in the sections marked **Fill the code**.
 
