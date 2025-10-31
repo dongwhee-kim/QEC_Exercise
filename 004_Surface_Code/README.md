@@ -1,7 +1,8 @@
 # Regular Surface Code
 
 # Objective
-- Understand the Regular Surface Code, a topological error correction code that uses a two-dimensional lattice of qubits to encode logical qubits.
+- Understand the Regular Surface Code **[1]**, a topological error correction code that uses a two-dimensional lattice of qubits to encode logical qubits.
+- Understand the **Minimum Weight Perfect Matching (MWPM)** **[2]** decoding method (approach to graph pairing)
 - It has a high error correction threshold and is considered one of the most promising techniques for large-scale, fault-tolerant quantum computing.
 - The surface code is used by the [Azure Quantum Resource Estimator](https://learn.microsoft.com/en-us/azure/quantum/overview-resources-estimator#quantum-error-correction-schemes).
 
@@ -15,6 +16,10 @@
 
 # Regular Surface Code Parameters
 ![Regular_Surface_Code_Parameters](images/Regular_Surface_Code_Parameters.png)
+
+# Overview
+1) Regular Surface Code Layout
+![Regular_Surface_Code](images/Regular_Surface_Code.png)
 
 # To do
 - Complete the code in the sections marked **Fill the code**.
@@ -40,3 +45,4 @@
 
 # References
 - **[1]** Fowler, Austin G., et al. "Surface codes: Towards practical large-scale quantum computation." Physical Review A—Atomic, Molecular, and Optical Physics 86.3 (2012): 032324.
+- **[2]** Edmonds, Jack. "Paths, trees, and flowers." Canadian Journal of mathematics 17 (1965): 449-467.
