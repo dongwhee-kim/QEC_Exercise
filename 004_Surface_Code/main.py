@@ -1,194 +1,32 @@
 from qiskit_aer.noise import NoiseModel
 from qiskit_ibm_runtime.fake_provider import FakeManilaV2
 from qiskit_aer import AerSimulator
-from qiskit import QuantumCircuit
+from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 
 import numpy as np
-import layout
-import decoding_graph
-import correction
-
-# Z-Graph (Data X-Error) test
-def run_data_x_error_test(num_trials, num_rounds, z_graph, z_node_map):
-    """
-    (Z-Graph) Runs a simulation injecting a single, random data qubit X-error
-    for each trial and checks if the decoder finds it.
-    """
-    print(f"\n--- Running {num_trials} trials of Single Data Qubit X-Errors (Z-Graph) ---")
-    decoder_failures = 0
-
-    data_to_z_ancillas = {}
-    for ancilla, data_qubits in layout.z_stabilizers.items():
-        for data in data_qubits:
-            if data not in data_to_z_ancillas:
-                data_to_z_ancillas[data] = []
-            data_to_z_ancillas[data].append(ancilla)
-
-    ancilla_names = list(layout.z_stabilizers.keys()) # Z-Ancilla name list
-    data_qubit_names = list(layout.data_map.keys()) if hasattr(layout, 'data_map') else [f'd[{i}]' for i in range(layout.NUM_DATA_QUBITS)]
-
-    for _ in range(num_trials):
-        injected_data_qubit = np.random.choice(data_qubit_names)
-        affected_ancillas = data_to_z_ancillas.get(injected_data_qubit, [])
-        
-        syndrome_list = []
-        base_syndrome = np.zeros(layout.NUM_Z_ANCILLAS, dtype=int)
-
-        for ancilla_name in affected_ancillas:
-            ancilla_idx = ancilla_names.index(ancilla_name)
-            base_syndrome[ancilla_idx] = 1
-
-        for r in range(num_rounds):
-            syndrome_str = "".join(map(str, base_syndrome))
-            syndrome_list.append(syndrome_str)
-
-        # ancilla_names transfer
-        defect_nodes = correction.get_defects_from_syndromes(syndrome_list, ancilla_names)
-        matching = correction.run_mwpm(z_graph, z_node_map, defect_nodes)
-
-        if len(defect_nodes) == 2 and (matching is None or len(matching) != 1):
-            decoder_failures += 1
-        elif len(defect_nodes) != 2 and len(defect_nodes) != 0:
-            decoder_failures += 1
-
-    print(f"Data X-Error Test Complete. Decoder Failures: {decoder_failures}/{num_trials}")
-    return decoder_failures
-
-# Z-Graph (Meas Z-Error) test
-def run_meas_z_error_test(num_trials, num_rounds, z_graph, z_node_map):
-    """
-    (Z-Graph) Runs a simulation injecting a single, random Z-ancilla measurement
-    error for each trial and checks if the decoder finds it.
-    """
-    print(f"\n--- Running {num_trials} trials of Single Z-Measurement-Errors (Z-Graph) ---")
-    decoder_failures = 0
-    ancilla_names = list(layout.z_stabilizers.keys()) # Z-Ancilla name list
-
-    for _ in range(num_trials):
-        error_round = np.random.randint(0, num_rounds)
-        error_ancilla_idx = np.random.randint(0, layout.NUM_Z_ANCILLAS)
-
-        syndrome_list = []
-        for r in range(num_rounds):
-            round_syndrome = np.zeros(layout.NUM_Z_ANCILLAS, dtype=int)
-            if r == error_round:
-                round_syndrome[error_ancilla_idx] = 1
-            
-            syndrome_str = "".join(map(str, round_syndrome))
-            syndrome_list.append(syndrome_str)
-
-        # ancilla_names transfer
-        defect_nodes = correction.get_defects_from_syndromes(syndrome_list, ancilla_names)
-        matching = correction.run_mwpm(z_graph, z_node_map, defect_nodes)
-
-        if len(defect_nodes) == 2 and (matching is None or len(matching) != 1):
-            decoder_failures += 1
-        elif len(defect_nodes) != 2 and len(defect_nodes) != 0:
-            if error_round == num_rounds - 1:
-                pass
-            else:
-                decoder_failures += 1
-
-    print(f"Meas Z-Error Test Complete. Decoder Failures: {decoder_failures}/{num_trials}")
-    return decoder_failures
-
-# X-Graph (Data Z-Error) test ---
-def run_data_z_error_test(num_trials, num_rounds, x_graph, x_node_map):
-    """
-    (X-Graph) Runs a simulation injecting a single, random data qubit Z-error
-    for each trial and checks if the decoder finds it.
-    """
-    print(f"\n--- Running {num_trials} trials of Single Data Qubit Z-Errors (X-Graph) ---")
-    decoder_failures = 0
-
-    data_to_x_ancillas = {}
-    for ancilla, data_qubits in layout.x_stabilizers.items(): # x_stabilizers
-        for data in data_qubits:
-            if data not in data_to_x_ancillas:
-                data_to_x_ancillas[data] = []
-            data_to_x_ancillas[data].append(ancilla)
-
-    ancilla_names = list(layout.x_stabilizers.keys()) # X-Ancilla name list
-    data_qubit_names = list(layout.data_map.keys()) if hasattr(layout, 'data_map') else [f'd[{i}]' for i in range(layout.NUM_DATA_QUBITS)]
-
-    for _ in range(num_trials):
-        injected_data_qubit = np.random.choice(data_qubit_names)
-        affected_ancillas = data_to_x_ancillas.get(injected_data_qubit, [])
-        
-        syndrome_list = []
-        base_syndrome = np.zeros(layout.NUM_X_ANCILLAS, dtype=int) # [!!] NUM_X_ANCILLAS
-
-        for ancilla_name in affected_ancillas:
-            ancilla_idx = ancilla_names.index(ancilla_name)
-            base_syndrome[ancilla_idx] = 1
-
-        for r in range(num_rounds):
-            syndrome_str = "".join(map(str, base_syndrome))
-            syndrome_list.append(syndrome_str)
-
-        # x ancilla_names transfer
-        defect_nodes = correction.get_defects_from_syndromes(syndrome_list, ancilla_names)
-        matching = correction.run_mwpm(x_graph, x_node_map, defect_nodes)
-
-        if len(defect_nodes) == 2 and (matching is None or len(matching) != 1):
-            decoder_failures += 1
-        elif len(defect_nodes) != 2 and len(defect_nodes) != 0:
-            decoder_failures += 1
-
-    print(f"Data Z-Error Test Complete. Decoder Failures: {decoder_failures}/{num_trials}")
-    return decoder_failures
-
-# X-Graph (Meas X-Error) test
-def run_meas_x_error_test(num_trials, num_rounds, x_graph, x_node_map):
-    """
-    (X-Graph) Runs a simulation injecting a single, random X-ancilla measurement
-    error for each trial and checks if the decoder finds it.
-    """
-    print(f"\n--- Running {num_trials} trials of Single X-Measurement-Errors (X-Graph) ---")
-    decoder_failures = 0
-    ancilla_names = list(layout.x_stabilizers.keys()) # X-Ancilla name list
-
-    for _ in range(num_trials):
-        error_round = np.random.randint(0, num_rounds)
-        error_ancilla_idx = np.random.randint(0, layout.NUM_X_ANCILLAS) # [!!] NUM_X_ANCILLAS
-
-        syndrome_list = []
-        for r in range(num_rounds):
-            round_syndrome = np.zeros(layout.NUM_X_ANCILLAS, dtype=int) # [!!] NUM_X_ANCILLAS
-            if r == error_round:
-                round_syndrome[error_ancilla_idx] = 1
-            
-            syndrome_str = "".join(map(str, round_syndrome))
-            syndrome_list.append(syndrome_str)
-
-        # x ancilla_names transfer
-        defect_nodes = correction.get_defects_from_syndromes(syndrome_list, ancilla_names)
-        matching = correction.run_mwpm(x_graph, x_node_map, defect_nodes)
-
-        if len(defect_nodes) == 2 and (matching is None or len(matching) != 1):
-            decoder_failures += 1
-        elif len(defect_nodes) != 2 and len(defect_nodes) != 0:
-            if error_round == num_rounds - 1:
-                pass
-            else:
-                decoder_failures += 1
-
-    print(f"Meas X-Error Test Complete. Decoder Failures: {decoder_failures}/{num_trials}")
-    return decoder_failures
+import generate_circuit
+import error_injection
+import syndrome_extraction
 
 def main():
     # 0. Setup (weight = -ln(p))
-    NUM_TRIALS = 1000
-    NUM_ROUNDS = 3  # syndrome extraction round
+    d=3 # code distance
+    num_data_qubits = 13
+    num_x_ancillas = 6
+    num_z_ancillas = 6
+    num_trials = 1000
+    num_rounds = 3  # syndrome extraction round
     # Error Model
     prob_data_x = 0.5  # For Z-Decoding Graph (Space)
     prob_data_z = 0.5  # For X-Decoding Graph (Space)
     prob_meas_z = 0.1  # For Z-Decoding Graph (Time)
     prob_meas_x = 0.1  # For X-Decoding Graph (Time)
 
+    Error_Data_Cases = [None, 0, 1, 2, 3, 4, 5, 6]
+
     print("--- Surface Code Monte Carlo Test (d=3) ---")
-    print(f"Running {NUM_TRIALS} trials each for data and measurement errors.")
-    print(f"Using {NUM_ROUNDS} syndrome rounds.")
+    print(f"Running {num_trials} trials each for data and measurement errors.")
+    print(f"Using {num_rounds} syndrome rounds.")
 
     print("--- Error Model (Probabilities) ---")
     print(f"Data X-Error (p_data_x):   {prob_data_x} (Weight: {-np.log(prob_data_x):.3f})")
@@ -196,49 +34,31 @@ def main():
     print(f"Z-Meas Error (p_meas_z):  {prob_meas_z} (Weight: {-np.log(prob_meas_z):.3f})")
     print(f"X-Meas Error (p_meas_x):  {prob_meas_x} (Weight: {-np.log(prob_meas_x):.3f})")
     
-    # 1. Build the Z-Decoding Graph (for X-errors)
-    print("\nBuilding Z-Decoding Graph (for Data-X and Meas-Z errors)...")
-    z_graph, z_node_map = decoding_graph.build_z_decoding_graph(
-        NUM_ROUNDS,
-        prob_data_x,  # Pass the specific prob
-        prob_meas_z   # Pass the specific prob
-    )
-    print(f"Graph built with {z_graph.num_nodes()} nodes and {z_graph.num_edges()} edges.")
-    
-    # Build the Z-Decoding Graph (for X-errors)
-    print("\nBuilding X-Decoding Graph (for Data-Z and Meas-X errors)...")
-    x_graph, x_node_map = decoding_graph.build_x_decoding_graph(
-        NUM_ROUNDS,
-        prob_data_z, 
-        prob_meas_x  
-    )
-    print(f"Graph built with {x_graph.num_nodes()} nodes and {x_graph.num_edges()} edges.")
-
-# --- Run Simulation 1: Data Qubit Errors (tests Z-Graph) ---
-    data_x_errors = run_data_x_error_test(NUM_TRIALS, NUM_ROUNDS, z_graph, z_node_map)
-
-    # --- Run Simulation 2: Measurement Errors (tests Z-Graph) ---
-    meas_z_errors = run_meas_z_error_test(NUM_TRIALS, NUM_ROUNDS, z_graph, z_node_map)
- 
-    # --- Run Simulation 3: Data Qubit Errors (tests X-Graph) ---
-    data_z_errors = run_data_z_error_test(NUM_TRIALS, NUM_ROUNDS, x_graph, x_node_map)
-
-    # --- Run Simulation 4: Measurement Errors (tests X-Graph) ---
-    meas_x_errors = run_meas_x_error_test(NUM_TRIALS, NUM_ROUNDS, x_graph, x_node_map)
-
-    print("\n--- Simulation Summary ---")
-    print(f"Total Data-X Error Decoder Failures (Z-Graph): {data_x_errors}")
-    print(f"Total Meas-Z Error Decoder Failures (Z-Graph): {meas_z_errors}")
-    print(f"Total Data-Z Error Decoder Failures (X-Graph): {data_z_errors}")
-    print(f"Total Meas-X Error Decoder Failures (X-Graph): {meas_x_errors}")
 
     # 1. Generate Surface Code Layout (Complete)
+    qc_main = generate_circuit.generate_circuit_func()
 
     # 1-1. Generate Z_Decoding Graph (ZZ) with weight
+    """
+       start_index, end_index는 같은 node 기준이면 index가 작은 것에서 큰 순서
+    d=3기준 round마다 7개 edge 있음
+    -> start_index_z_graph = [0, 0, 1, 2, 2, 3, 4]
+    -> end_index_z_graph   = [1, 2, 3, 3, 4, 5, 5]
+    -> weight_z_graph 	    = [ln2, ln2, ln2, ln2, ln2, ln2, ln2]
+    """
 
     # 1-2. Generate X_Decoding Graph (XX) with weight
 
-    # 2. Error Injection (Determine Error Type)
+    print("--- Test Correction Capabiliy (d=3 -> Single Data Qubit Error/Single Measurement Error) ---")
+
+
+    # 2. Error Injection (Determine Error Type) - error injection은 round0에만 들어간다.
+    # 모든 라운드에 독립적으로 들어감. 
+    # 오류 전파 -> 이전 라운드에 data qubit 오류 있으면 수정되기 전까지 사라지지 않음. ->
+    # 즉, round=0에서 d[5]에 X 오류 있으면 sz[2]=1, sz[8]=1, sz[14]=1 된다.
+    # measurement error qc.measure 이후에 얻게 되는 classical bit를 뒤집는 방식으로 진행. 
+    # 매 라운드마다 총 12개 syndome 측정 결과값 sz, sx들을 확률적으로 값을 뒤집는다.
+    # classical 값이기에 bit flip만 적용하면 된다.
 
         # Determine Error Type (Data qubit error vs Measurement error)
         # Data qubit error
@@ -250,9 +70,12 @@ def main():
         # 1) Determine X/Z ancilla
         # 2) Determine error location (e.g., 0~5 (d=3))
         # 3) Error Injection (After Error Detection)
+    error_injection.error_injection_correction_capability_func(qc_main, flip)
 
     # 3. Error Detection (Multi Adjacent CNOTs)
     # Multi Round Syndrome Extraction
+    for round_idx in range(num_rounds):
+        syndrome_extraction.syndrome_extraction_func(qc_main, round_idx)
 
     # 4. Error Correction (MWPM, using Decoding Graph)
 
@@ -262,6 +85,11 @@ def main():
 
     # 6. Error Report
 
+    print("--- Test Logical Error Rate (LER) (d=3) ---")
+    
+    # 2. Error Injection (Determine Error Type) - error injection은 모든 round에 랜덤하게 들어간다.
 
-if __name__ == '__main__':
+    error_injection.error_injection_logical_error_rate_func(qc_main, flip)
+
+if __name__ == '__main__': 
     main()
