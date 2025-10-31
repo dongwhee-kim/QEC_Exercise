@@ -4,7 +4,6 @@
 - Understand the Regular Surface Code **[1]**, a topological error correction code that uses a two-dimensional lattice of qubits to encode logical qubits.
 - Understand the **Minimum Weight Perfect Matching (MWPM)** **[2]** decoding method (approach to graph pairing)
 - It has a high error correction threshold and is considered one of the most promising techniques for large-scale, fault-tolerant quantum computing.
-- The surface code is used by the [Azure Quantum Resource Estimator](https://learn.microsoft.com/en-us/azure/quantum/overview-resources-estimator#quantum-error-correction-schemes).
 
 # Prerequisite
 - Read the foundational paper for the Regular Surface Code **[1]**.
@@ -17,9 +16,15 @@
 # Regular Surface Code Parameters
 ![Regular_Surface_Code_Parameters](images/Regular_Surface_Code_Parameters.png)
 
+# Error Model
+![Error_Model](images/Error_Model.png)
+
 # Overview
 1) Regular Surface Code Layout - Data Qubit (White), X-ancilla Qubit (Yellow), Z-ancilla Qubit(Green)
-<img src="images/Regular_Surface_Code.png" alt="CRegular_Surface_Code" width="50%">
+<img src="images/Regular_Surface_Code.png" alt="Regular_Surface_Code" width="50%">
+
+2) Z Decoding Graph (with Weight)
+![Z_Decoding_Graph](images/Z_Decoding_Graph.png)
 
 # To do
 - Complete the code in the sections marked **Fill the code**.
@@ -40,8 +45,12 @@
  3) **Scalability**: The code's 2D grid structure allows itself to increase the size of the lattice, making it a clear path toward large-scale, fault-tolerant quantum computing (FTQC).
 - The key difference is that the Steane code is a **block code**, where all 7 qubits are treated as a single, static block. The circuit you showed ($[[7, 1, 3]]$) nicely fits on one diagram.
 - The surface code is a **topological code**. Its circuit is defined by its 2D grid layout and, most importantly, it's not a single "encode-detect-decode" circuit. Instead, it's a repeating cycle of measurements.
+- The surface code is used by the [Azure Quantum Resource Estimator](https://learn.microsoft.com/en-us/azure/quantum/overview-resources-estimator#quantum-error-correction-schemes).
 - IBM: Heavy hex lattice architecture
 - Google: Surface Code
+- Types of decoders
+ 1) Accuracy: MWPM (Low) < Two-pass matching < Belief-matching < Tensor network decoding
+ 2) Latency: MWPM (Fast) < Two-pass matching < Belief-matching < Tensor network decoding
 
 # References
 - **[1]** Fowler, Austin G., et al. "Surface codes: Towards practical large-scale quantum computation." Physical Review A—Atomic, Molecular, and Optical Physics 86.3 (2012): 032324.
