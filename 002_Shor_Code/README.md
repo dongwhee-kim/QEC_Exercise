@@ -34,7 +34,7 @@ If the result differs from the above, please modify the code accordingly.
  1) [Intra-Block] Bit-flip correction
  2) [Inter-Block] Phase-flip correction
 
-# Additioanl Information (History)
+# Additional Information (History)
 - The development of quantum error correction faced a significant conceptual hurdle: the **no-cloning theorem**, which states that it is impossible to create an exact copy of an unknown quantum state.
 - This theorem seemed to prevent the creation of redundant copies, a cornerstone of classical error correction.
 - However, a breakthrough was achieved by realizing that information could be protected without copying.

@@ -18,7 +18,7 @@
 ![Regular_Surface_Code_Parameters](images/Regular_Surface_Code_Parameters.png)
 
 # Overview
-1) Regular Surface Code Layout (Data Qubit (White), X-ancilla Qubit (Yellow), Z-ancilla Qubit(Green))
+1) Regular Surface Code Layout - Data Qubit (White), X-ancilla Qubit (Yellow), Z-ancilla Qubit(Green)
 <img src="images/Regular_Surface_Code.png" alt="CRegular_Surface_Code" width="50%">
 
 # To do
@@ -32,7 +32,7 @@
 # Hint
 - 
 
-# Additioanl Information
+# Additional Information
 - Structure of Surface Code: Family of quantum error correction codes defined on a 2D lattice of qubits with local interactions that encodes logical qubits using a larger number of physical qubits.
 - Advantages of Surface Code
  1) **High Error Threshold**: It can tolerate physical qubit error rates up to approximately 1%. This high threshold is crucial, as it makes the code viable for implementation on today's noisy intermediate-scale quantum (NISQ) devices.

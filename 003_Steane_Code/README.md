@@ -30,7 +30,7 @@ If the result differs from the above, please modify the code accordingly.
 - Steane Code uses the classical binary [7, 4, 3] Hamming Code to correct for both bit-flip (X) errors and phase-flip (Z) errors.
 - The bit-flip and phase-flip don't have to be on the same qubit - they can both occur on different qubits, and the code can still fix it.
 
-# Additioanl Information
+# Additional Information
 - Steane Code is also a quantum Color Code.
 
 # References

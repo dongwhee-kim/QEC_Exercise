@@ -9,8 +9,8 @@
 # Overview
 1) Regular to Rotated Surface Code Transformation
 ![Regular_Rotated_Surface_Code](images/Regular_Rotated_Surface_Code.png)
-2) Rotated Surface Code Layout
-![Rotated_Surface_Code](images/Rotated_Surface_Code.png)
+2) Rotated Surface Code Layout - Data Qubit (White), X-ancilla Qubit (Yellow), Z-ancilla Qubit(Green)
+<img src="images/Rotated_Surface_Code.png" alt="Rotated_Surface_Code" width="50%">
 
 # Additional Information
 - 

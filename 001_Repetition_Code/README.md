@@ -34,7 +34,7 @@ If the result differs from the above, please modify the code accordingly.
 - Z Error: If you want to correct single phase flip error, add a **Hadamard gate**.
 - It encodes a single logical qubit into three physical qubits by repeating the qubit three times.
 
-# Additioanl Information (History)
+# Additional Information (History)
 - A classical repetition code protects information from bit-flip errors by encoding a single bit into a redundant string of multiple bits.
 - The classical repetition code cannot be directly translated to the quantum realm due to the **no-cloning theorem**, which prohibits creating an exact copy of an unknown quantum state.
 - Peres' solution - The three-qubit bit-flip code **[1]**.
