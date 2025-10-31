@@ -19,7 +19,7 @@
 
 # Overview
 1) Regular Surface Code Layout
-![Regular_Surface_Code](images/Regular_Surface_Code.png)
+<img src="images/Regular_Surface_Code.png" alt="CRegular_Surface_Code" width="50%">
 
 # To do
 - Complete the code in the sections marked **Fill the code**.
