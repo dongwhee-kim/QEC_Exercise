@@ -18,7 +18,7 @@
 ![Regular_Surface_Code_Parameters](images/Regular_Surface_Code_Parameters.png)
 
 # Overview
-1) Regular Surface Code Layout
+1) Regular Surface Code Layout (Data Qubit (White), X-ancilla Qubit (Yellow), Z-ancilla Qubit(Green))
 <img src="images/Regular_Surface_Code.png" alt="CRegular_Surface_Code" width="50%">
 
 # To do
