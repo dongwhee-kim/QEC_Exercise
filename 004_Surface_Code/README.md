@@ -16,6 +16,11 @@
 # Regular Surface Code Parameters
 ![Regular_Surface_Code_Parameters](images/Regular_Surface_Code_Parameters.png)
 
+# Configuration
+- Code distance (d): 3
+- Num of syndrome extraction rounds: 3
+- Num of errors (data qubit errors 'or' measurement errors): 1
+
 # Error Model
 ![Error_Model](images/Error_Model.png)
 
