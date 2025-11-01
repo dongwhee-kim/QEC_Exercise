@@ -17,7 +17,7 @@ import sys
 # round2: sz[14] = 0 -> 0 (non-change!)
 # result: sz[2], sz[8] double event -> no correction. shortest path is time-like measurement error
 
-def error_injection_correction_capability_func(qc, flip_index, error_type='X'):
+def error_injection_single_qubit_error_func(qc, flip_index, error_type='X'):
     if flip_index is None:
         return
     
@@ -28,6 +28,22 @@ def error_injection_correction_capability_func(qc, flip_index, error_type='X'):
     elif error_type == 'Y':
         qc.x(flip_index)
         qc.z(flip_index)
+    else:
+        print("Wrong Error Type")
+        sys.exit(1)
+
+    return
+
+def error_injection_single_measurement_error_func(qc, flip_index, error_type='X'):
+    sz = next(reg for reg in qc.cregs if reg.name == 'sz')
+    sx = next(reg for reg in qc.cregs if reg.name == 'sx')
+    if flip_index is None:
+        return
+    
+    if error_type == 'X':
+        qc.x(sx[flip_index])
+    elif error_type == 'Z' or error_type == 'Y'
+        qc.x(sz[flip_index])
     else:
         print("Wrong Error Type")
         sys.exit(1)

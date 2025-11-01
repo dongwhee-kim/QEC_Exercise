@@ -16,7 +16,8 @@ PACKAGES = [
     "qiskit-ibm-runtime", 
     "tqdm",
     "pymatching",
-    "rustworkx"
+    "rustworkx",
+    "networkx"
 ]
 
 # --------------------------

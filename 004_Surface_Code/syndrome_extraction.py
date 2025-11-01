@@ -7,6 +7,7 @@ def syndrome_extraction_func(qc, round_idx):
     cx = next(reg for reg in qc.qregs if reg.name == 'cx')
     sz = next(reg for reg in qc.cregs if reg.name == 'sz')
     sx = next(reg for reg in qc.cregs if reg.name == 'sx')
+    res = next(reg for reg in qc.cregs if reg.name == 'res')
 
     # --- X-Stabilizer Measurement (XX) ---
     # Detect Phase flip (Z) error
