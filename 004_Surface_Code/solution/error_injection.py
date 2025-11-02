@@ -88,7 +88,6 @@ def post_process_measurement_error_func(measured_string, ancilla_flip_index, err
     # Rejoin the modified bit strings and return
     return "".join(sx_bits) + "".join(sz_bits) + "".join(res_bits)
 
-# data qubit error injection (for LER)
 def error_injection_logical_error_rate_func(qc, num_data_qubits, prob_data_x, prob_data_z):
     """
     For LER (Logical Error Rate) testing:
@@ -108,7 +107,7 @@ def error_injection_logical_error_rate_func(qc, num_data_qubits, prob_data_x, pr
             
     return
 
-# measurement error injection (for LER)
+# --- ⭐️ [Newly Added Function] ⭐️ ---
 def post_process_ler_measurement_errors(measured_string, num_rounds, num_x_ancillas, num_z_ancillas, prob_meas_x, prob_meas_z):
     """
     For LER (Logical Error Rate) testing:

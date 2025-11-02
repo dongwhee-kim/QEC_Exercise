@@ -208,7 +208,7 @@ def main():
     success_rate_ler = (error_report_ler['NE'] + error_report_ler['CE']) / num_trials * 100
     print(f"Success Rate (NE + CE): {success_rate_ler:.2f}%")
     print(f"Failure Rate (UE): {100.0 - success_rate_ler:.2f}%")
-    # --- [LER Test End] ---
+    # --- [⭐️ LER Test End ⭐️] ---
 
 
 if __name__ == '__main__': 

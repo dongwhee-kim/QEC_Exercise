@@ -2,8 +2,8 @@
 
 # Objective
 - Understand the Regular Surface Code **[1]**, a topological error correction code that uses a two-dimensional lattice of qubits to encode logical qubits.
-- Understand the **Minimum Weight Perfect Matching (MWPM)** **[2]** decoding method (approach to graph pairing)
-- It has a high error correction threshold and is considered one of the most promising techniques for large-scale, fault-tolerant quantum computing.
+- Understand the **Minimum Weight Perfect Matching (MWPM)** **[2]** decoding method (approach to graph pairing).
+- When you actually use Surface Code later, you can use [PyMatching](https://github.com/oscarhiggott/PyMatching) **[3]**.
 
 # Prerequisite
 - Read the foundational paper for the Regular Surface Code **[1]**.
@@ -19,7 +19,6 @@
 # Configuration
 - Code distance (d): 3
 - Num of syndrome extraction rounds: 3
-- Num of errors (data qubit errors 'or' measurement errors): 1
 
 # Error Model
 ![Error_Model](images/Error_Model.png)
@@ -38,12 +37,18 @@
 - $ python main.py > result.txt
 
 # Answer (result.txt)
+1) Single Error Test
+- NE: ≈ 11
+- CE: ≈ 89
+- UE: 0
 
+2) Logical Error Rate (LER) Test
+Logical Error Rate (LER) (UE / Trials) $a \lesssim 0.1$
 
-# Hint
-- 
+If the result differs from the above, please modify the code accordingly.
 
 # Additional Information
+- Surface Code has a high error correction threshold and is considered one of the most promising techniques for large-scale, fault-tolerant quantum computing.
 - Structure of Surface Code: Family of quantum error correction codes defined on a 2D lattice of qubits with local interactions that encodes logical qubits using a larger number of physical qubits.
 - Advantages of Surface Code
  1) **High Error Threshold**: It can tolerate physical qubit error rates up to approximately 1%. This high threshold is crucial, as it makes the code viable for implementation on today's noisy intermediate-scale quantum (NISQ) devices.
@@ -52,8 +57,6 @@
 - The key difference is that the Steane code is a **block code**, where all 7 qubits are treated as a single, static block. The circuit you showed ($[[7, 1, 3]]$) nicely fits on one diagram.
 - The surface code is a **topological code**. Its circuit is defined by its 2D grid layout and, most importantly, it's not a single "encode-detect-decode" circuit. Instead, it's a repeating cycle of measurements.
 - The surface code is used by the [Azure Quantum Resource Estimator](https://learn.microsoft.com/en-us/azure/quantum/overview-resources-estimator#quantum-error-correction-schemes).
-- IBM: Heavy hex lattice architecture
-- Google: Surface Code
 - Types of decoders
  1) Accuracy: MWPM (Low) < Two-pass matching < Belief-matching < Tensor network decoding
  2) Latency: MWPM (Fast) < Two-pass matching < Belief-matching < Tensor network decoding
@@ -61,3 +64,4 @@
 # References
 - **[1]** Fowler, Austin G., et al. "Surface codes: Towards practical large-scale quantum computation." Physical Review A—Atomic, Molecular, and Optical Physics 86.3 (2012): 032324.
 - **[2]** Edmonds, Jack. "Paths, trees, and flowers." Canadian Journal of mathematics 17 (1965): 449-467.
+- **[3]** Sparse {B}lossom: correcting a million errors per core second with minimum-weight matching.
