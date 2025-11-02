@@ -20,7 +20,7 @@ def main():
     num_data_qubits = 13
     num_x_ancillas = 6
     num_z_ancillas = 6
-    num_trials = 1000
+    num_trials = 1000 # Monte-Carlo Simulation
     num_rounds = 3  # syndrome extraction round
     # Error Model
     prob_data_x = 0.001  # For Z-Decoding Graph (Space)
@@ -48,7 +48,7 @@ def main():
     # 1. Generate Surface Code Layout (Complete)
     qc_main = generate_circuit.generate_circuit_func()
     # initialization: d register all '0's (|0...0>)
-    qc_main.initialize([0]*num_data_qubits, qc_main.qregs[0])
+    qc_main.initialize(0, qc_main.qregs[0])
     qc_main.barrier()
 
     # 1-1. Generate Z_Decoding Graph (ZZ) with weight
@@ -79,6 +79,14 @@ def main():
     ancilla_flip_index = random.choice(Error_Ancilla_Cases) # None, 0, 1, 2, 3, 4, 5
     error_group = random.choice(Error_Group) # Data, Measurement
     error_type = random.choice(Error_Types) # X, Z, Y
+
+    injected_error_details = "None"
+    if error_group == 'Data' and data_flip_index is not None:
+        injected_error_details = f"Data Qubit d[{data_flip_index}], Type: {error_type}"
+    elif error_group == 'Measurement' and ancilla_flip_index is not None:
+        injected_error_details = f"Measurement (Round 0) Ancilla idx {ancilla_flip_index}, Type: {error_type}"
+    print(f"Injecting Error: {injected_error_details}")
+    
     # single data qubit error (error injected only round 0)
     if error_group == 'Data':
         error_injection.error_injection_single_qubit_error_func(qc_main, data_flip_index, error_type)
@@ -87,25 +95,46 @@ def main():
     # Multi Round Syndrome Extraction
     for round_idx in range(num_rounds):
         syndrome_extraction.syndrome_extraction_func(qc_main, round_idx)
-        # measurement error injection (only round 0)
-        # only apply bit flip (because it is a classical value)
-        if error_group=='Measurement' and round_idx==0:
-            error_injection.error_injection_single_measurement_error_func(qc_main, ancilla_flip_index, error_type)
 
-    # 4. Error Correction (MWPM, using Decoding Graph)
-
-    # Extract ancilla qubits with '1' value and make decoding graph
-
-    # 5. Result report (13 data qubits)
+    # 4. Result report (13 data qubits)
     result_report.result_report_func(qc_main)
 
-    # 6. Run Simulator
+    # 5. Run Simulator
     trans_qc_main = transpile(qc_main, simulator)
-    result = simulator.run(trans_qc_main, shots=1).result() # on sho
+    result = simulator.run(trans_qc_main, shots=1).result() # on shot
     counts = result.get_counts()
     measured_string = list(counts.keys())[0]
 
-    # 7. Error Report using final data qubit (13bit) and syndromes
+    # 6. Post-Process -> Measurement Error Injection
+    if error_group == 'Measurement':
+        measured_string = error_injection.post_process_measurement_error_func(
+            measured_string, ancilla_flip_index, error_type, 
+            round_idx=0, # 단일 측정 에러는 round 0에만 주입
+            num_z_ancillas=num_z_ancillas, 
+            num_x_ancillas=num_x_ancillas
+        )
+
+    # 7. Error Correction (MWPM, using Decoding Graph) and Reporting
+    status = error_correction.run_error_correction_and_reporting(
+        measured_string=measured_string,
+        num_rounds=num_rounds,
+        num_data_qubits=num_data_qubits,
+        num_x_ancillas=num_x_ancillas,
+        num_z_ancillas=num_z_ancillas,
+        spatial_edges_z=spatial_edges_z,
+        spatial_edges_x=spatial_edges_x,
+        prob_data_x=prob_data_x,
+        prob_data_z=prob_data_z,
+        prob_meas_z=prob_meas_z,
+        prob_meas_x=prob_meas_x,
+        injected_error_group=error_group,
+        injected_data_flip_index=data_flip_index,
+        injected_ancilla_flip_index=ancilla_flip_index
+    )
+
+    error_report[status] += 1
+    print(f"Decoder Result: {status}")
+    print(f"Current Report: {error_report}")
 
 
     # LER Test Start
@@ -115,7 +144,7 @@ def main():
     # 2. Error Injection (Determine Error Type) - error injection은 모든 round에 랜덤하게 들어간다.
     # 모든 라운드에 독립적으로 들어감. 
 
-    error_injection.error_injection_logical_error_rate_func(qc_main, flip)
+    # error_injection.error_injection_logical_error_rate_func(qc_main, flip)
 
 if __name__ == '__main__': 
     main()
