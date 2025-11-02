@@ -35,9 +35,10 @@
 - Complete the code in the sections marked **Fill the code**.
 
 # Getting Started
-- $ python main.py
+- $ python main.py > result.txt
 
-# Answer (Solution Folder)
+# Answer (result.txt)
+
 
 # Hint
 - 

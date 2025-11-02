@@ -18,31 +18,31 @@ def syndrome_extraction_func(qc, round_idx):
     qc.h(cx[4]) # c_x[4]
     qc.h(cx[5]) # c_x[5]
 
-    qc.cx(cx[0], d[0]) # (c_x[0] -> d[0])
-    qc.cx(cx[0], d[3]) # (c_x[0] -> d[3])
-    qc.cx(cx[0], d[5]) # (c_x[0] -> d[5])
+    qc.cx(d[0], cx[0]) # (d[0] -> c_x[0])
+    qc.cx(d[3], cx[0]) # (d[3] -> c_x[0])
+    qc.cx(d[5], cx[0]) # (d[5] -> c_x[0])
 
-    qc.cx(cx[1], d[1])
-    qc.cx(cx[1], d[3])
-    qc.cx(cx[1], d[4])
-    qc.cx(cx[1], d[6])
+    qc.cx(d[1], cx[1])
+    qc.cx(d[3], cx[1])
+    qc.cx(d[4], cx[1])
+    qc.cx(d[6], cx[1])
 
-    qc.cx(cx[2], d[2])
-    qc.cx(cx[2], d[4])
-    qc.cx(cx[2], d[7])
+    qc.cx(d[2], cx[2])
+    qc.cx(d[4], cx[2])
+    qc.cx(d[7], cx[2])
 
-    qc.cx(cx[3], d[5])
-    qc.cx(cx[3], d[8])
-    qc.cx(cx[3], d[10])
+    qc.cx(d[5], cx[3])
+    qc.cx(d[8], cx[3])
+    qc.cx(d[10], cx[3])
 
-    qc.cx(cx[4], d[6])
-    qc.cx(cx[4], d[8])
-    qc.cx(cx[4], d[9])
-    qc.cx(cx[4], d[11])
+    qc.cx(d[6], cx[4])
+    qc.cx(d[8], cx[4])
+    qc.cx(d[9], cx[4])
+    qc.cx(d[11], cx[4])
 
-    qc.cx(cx[5], d[7])
-    qc.cx(cx[5], d[9])
-    qc.cx(cx[5], d[12])
+    qc.cx(d[7], cx[5])
+    qc.cx(d[9], cx[5])
+    qc.cx(d[12], cx[5])
 
     qc.h(cx[0]) # c_x[0]
     qc.h(cx[1]) # c_x[1]
