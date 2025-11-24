@@ -105,10 +105,7 @@ To quantify performance, we calculate the Logical Error Rate (LER) by comparing 
 
 1. **Measure Data Qubits**: Perform a transversal measurement of all data qubits at the end of the circuit.
 2. **Calculate Parity**: Compute the raw parity ($M_{raw}$) of the logical operator chain (e.g., the product of Z operators along a column).
-3. **Apply Correction**: Adjust the raw parity using the accumulated correction history ($C_{accumulated}$) derived from syndrome measurements.
-   $$
-   M_{final} = M_{raw} \oplus C_{accumulated}
-   $$
+3. **Apply Correction**: Adjust the raw parity using the accumulated correction history ($C_{accumulated}$) derived from syndrome measurements. **$$M_{final} = M_{raw} \oplus C_{accumulated}$$**
    If $M_{final}$ differs from the initialized logical state, a logical error has occurred.
 
 **2. Measurement in Stim [6] (Google's Framework)** In **Stim**, logical errors are measured by defining a logical frame using the `OBSERVABLE_INCLUDE` instruction. The LER calculation follows a **Monte Carlo** sampling process:
@@ -118,14 +115,8 @@ To quantify performance, we calculate the Logical Error Rate (LER) by comparing 
     1. Stim samples **shots** (detection events) from the noisy circuit.
     2. A decoder (e.g., PyMatching, Fusion Blossom) processes these detection events to predict whether the logical observable has flipped ($P_{predicted} \in \{0, 1\}$).
     3. Stim simultaneously tracks the ground truth of the actual logical frame flip caused by noise ($P_{actual}$).
-3. **Verification**: A logical error is counted whenever the decoder's prediction fails to match the actual error realization:
-   $$
-   Error_{logical} \iff P_{predicted} \neq P_{actual}
-   $$
-4. **Final LER**:
-   $$
-   LER = \frac{\text{Total Logical Errors}}{\text{Total Shots}}
-   $$
+3. **Verification**: A logical error is counted whenever the decoder's prediction fails to match the actual error realization: **$$Error_{logical} \iff P_{predicted} \neq P_{actual}$$**
+4. **Final LER: $$LER = \frac{\text{Total Logical Errors}}{\text{Total Shots}}$$**  
 
 
 # 5. Advanced Scalability (Brief)
