@@ -9,6 +9,14 @@
 - [```ORCiD```](https://orcid.org/0009-0007-1673-1931?fbclid=PAAabkpwNHesKweJ6F2eGZDnFa2sch2211hf6ZY825YKuli5V7lcN7VIfT0CA)
 - [```LinkedIn```](https://www.linkedin.com/in/dongwhee-kim-5753a8290)
 
+I would like to express my gratitude to the people at ACES (Architectures for Emerging Systems) research group
+
+This will greatly aid your studies on Quantum Error Correction Codes
+
+### 📚 Classical Error Correction Codes Learning Resource [GitHub](https://github.com/dongwhee-kim/ECC-exercise)
+
+Study the basics and applications of **Classical Error Correction Codes** (Hamming, Cyclic Redundancy Check, Reed-Solomon) with these **exercises** and **simulators** to help you build a strong foundation
+
 ## Environmental Setup (Conda Recommended)
 ```bash
 $ conda create --name [conda name]
