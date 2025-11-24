@@ -92,15 +92,15 @@ To illustrate how Pauli Tracking works across multiple rounds to prevent logical
 
 **Setup**:
 
-- Qubits: 9 Data Qubits ($D_1 \dots D_9$) in a $3 \times 3$ grid.
-- Ancillas: 4 X-Syndrome, 4 Z-Syndrome.
-- Logical Operator ($Z_L$): Defined along the **left boundary (Z-boundary)**.
+- **Qubits**: 9 Data Qubits ($D_1 \dots D_9$) in a $3 \times 3$ grid.
+- **Ancillas**: 4 X-Syndrome, 4 Z-Syndrome.
+- **Logical Operator ($Z_L$)**: Defined along the **left boundary (Z-boundary)**.
 
 $$Z_L = Z(D_1) \cdot Z(D_4) \cdot Z(D_7)$$
 
-- Goal: Measure Logical Z after 3 Rounds of error correction.
+- **Goal**: Measure Logical Z after 3 Rounds of error correction.
 
-**Step 1**: Accumulate Error History (Rounds 1 ~ 3)
+**Step 1: Accumulate Error History (Rounds 1 ~ 3)**
 - The FPGA updates the Pauli Frame based on decoder predictions.
 - For a Z-basis logical measurement, we track X-errors (bit-flips) because they flip the Z eigenvalue ($Z|1\rangle = -|1\rangle$).
 - Round 1: Decoder detects an X-error on $D_4$. Frame Update: Frame[D4] = X (Flip recorded).
@@ -108,7 +108,7 @@ $$Z_L = Z(D_1) \cdot Z(D_4) \cdot Z(D_7)$$
 - Round 3: Decoder detects an X-error on $D_7$.Frame Update: Frame[D7] = X (Flip recorded).
 - Note: The physical qubits ($D_4, D_7$) are never touched by correction pulses. They remain in their errored states.
 
-**Step 2**: Physical Measurement (Raw Data)
+**Step 2: Physical Measurement (Raw Data)**
 - At the end of Round 3, we physically measure the boundary data qubits ($D_1, D_4, D_7$) to obtain the logical value.
 - Let's assume the initialized state was $|0\rangle_L$ (All $+1$).
 - Due to the uncorrected error on $D_7$, the physical measurement yields:
@@ -119,11 +119,11 @@ $D_4 \to +1$ (Double error canceled physically)
 
 $D_7 \to -1$ (Active Physical Error)
 
-Raw Parity ($M_{raw}$) calculation: 
+**Raw Parity ($M_{raw}$) calculation**: 
 
 $$M_{raw} = (+1) \times (+1) \times (-1) = -1$$ (This is incorrect; it suggests the state is $|1\rangle_L$.)
 
-**Step 3**: Software Correction & Logical Error Determination
+**Step 3: Software Correction & Logical Error Determination**
 - The system queries the Pauli Frame for the qubits in the $Z_L$ chain ($D_1, D_4, D_7$) to fix the raw data.
 - Check Frame:
 
@@ -133,11 +133,11 @@ $D_4$: Identity ($I$) $\rightarrow$ Correction $+1$
 
 $D_7$: Pauli $X$ (Active) $\rightarrow$ Correction $-1$ (Flip needed)
 
-Calculate Accumulated Correction ($C_{accumulated}$):
+**Calculate Accumulated Correction ($C_{accumulated}$)**:
 
 $$C_{accumulated} = (+1) \times (+1) \times (-1) = -1$$
 
-Final Correction:
+**Final Correction**:
 
 $$M_{final} = M_{raw} \times C_{accumulated} = (-1) \times (-1) = +1$$
 
