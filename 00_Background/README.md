@@ -1,73 +1,75 @@
-# Background
-- QEC Cycle / Round
-- Syndrome Vector
-- Logical Error
-- Error Chain
-- Pauli Tracking (referred to as working in the Pauli frame)
-- 1us = Readout & State Discrimination (FPGA, 300ns~500ns) + Syndrome Transmission (tens of ns) + Decoding (e.g., MWPM, Union-Find) 200ns~400ns + Feedback Transmission (2bits (X,Z,Y) per a data qubit) + Frame Update (FPGA)
-
 # Background: Real-Time Quantum Error Correction
-This document outlines the fundamental architecture and timing constraints of real-time Quantum Error Correction (QEC), specifically focusing on Surface Codes implemented on superconducting qubit systems.
 
-# 1. The 1µs Real-Time Decoding Cycle
+This document outlines the fundamental architecture and timing constraints of real-time Quantum Error Correction (QEC).
 
-Concept: In superconducting quantum systems, the syndrome extraction circuit typically has a latency of approximately 1µs (1000ns) [1, 2]. To prevent error accumulation (backlog), the entire decoding loop—from signal readout to frame update—must be completed within this strict deadline [2].
+**Specifically focusing on Surface Codes implemented on superconducting (IBM, Google) qubit systems.**
 
-Timing Breakdown: A typical 1µs cycle consists of the following mandatory stages:
-- 1) Readout & State Discrimination (300ns – 500ns): The FPGA (control hardware) converts analog microwave signals from the QPU into digital syndrome bits (0 or 1) [3].
-- 2) Syndrome Transmission (tens of ns): The raw syndrome data is transmitted from the FPGA to the Decoder unit. Bandwidth must be sufficient to prevent transmission latency from eating into the decoding budget [2].
-- Decoding (200ns – 400ns): Algorithms (e.g., MWPM, Union-Find) calculate the most likely error configuration based on the provided syndromes [1, 2].
-- Feedback Transmission: The decoder sends correction information (typically 2 bits per data qubit indicating X/Z errors) back to the FPGA [5].
-- Frame Update (Pauli Frame): The FPGA updates its internal error registers (Pauli Frame) using the received correction data [5, 6, 7].
+# 1. What is QEC? Why is it needed?
 
-**Description: A horizontal bar chart visualizing the 1000ns budget distribution: [Readout] -> [Tx] -> [Decoding] -> [Feedback] -> [Frame Update].**
+![IBM_Quantum_Development_Roadmap](images/IBM_Quantum_Development_Roadmap.webp)
+**Source: [IBM Quantum Roadmap 2025](https://www.ibm.com/quantum/blog/ibm-quantum-roadmap-2025)**
 
-# 2. Syndrome Vectors & Processing
+## Past -> Current (2025, Quantum Error Mitigation) -> Future (Quantum Error Correction)
 
-Concept: Instead of processing a single round in isolation, decoders typically aggregate syndromes over $d$ rounds (where $d$ is the code distance) to construct a Spacetime Syndrome Graph. This vector contains both spatial (data qubit) and temporal (measurement) error information [2, 4].
-- Syndrome Vector: A concatenated bitstring of syndromes collected over $d$ cycles.
-- Batch Processing: The decoder processes this vector to match error chains that span across space and time.
-**Note on Specific Implementations:**
- - 1) Astrea: Defines the "Syndrome Vector" explicitly and exploits its low Hamming weight for fast lookup [2].
- - 2) LILLIPUT: Uses a sliding window approach to process multiple rounds continuously [1].
+Quantum information is fragile. Without intervention, environmental noise destroys quantum states (decoherence).
 
+**Quantum Error Characterization**
+- **Gate Error**: A deviation from the ideal quantum gate operation, causing incorrect quantum states due to noise or other imperfections. Error-rates typically in the range of **0.1-1%**.
+- **Decoherence Error**: Occurs when a quantum system interacts with its environment, causing the loss of quantum information stored in superposition or entanglement. It is typically characterized by two time constants, **$T_1$ (Relaxation)** and **$T_2$ (Dephasing)** times.
+- **Measurement Error**: The discrepancy between the actual quantum state and the classical outcome obtained after measurement. This includes errors from state projection failure or detector inefficiencies. State $$|1\rangle$$ more prone to errors than state $$|0\rangle$$. Error-rates typically in the range of **1-4%**.
+- **Correlated Error**: Errors that affect multiple qubits simultaneously or where an error on one qubit is dependent on the state or operation of another. These errors violate the standard assumption that errors occur independently.
+ 1) **Spectator Error**: Errors induced on a qubit (the spectator) that is not currently being operated on, often caused by the interaction with neighboring qubits undergoing gate operations.
+ 2) **Crosstalk Error**: Unintended coupling between qubits or control lines, where a signal intended for one qubit affects another (e.g., driving Qubit A inadvertently rotates Qubit B).
+- **Leakage Error (Not a Pauli Error)**: A type of error where the qubit transitions out of the computational subspace (states $|0\rangle$ and $|1\rangle$) into **higher energy levels (e.g., $|2\rangle$)**, rendering standard quantum error correction protocols ineffective without specific leakage reduction techniques (e.g., Leakage Reduction Circuit (LRC)).
 
-# 3. Logical Errors & Error Chains
+To build useful quantum computers, we must distinctively handle errors in three ways:
 
-Error Chain: Physical errors on qubits form "chains" in the surface code lattice. A code of distance $d$ can correct chains of length up to $\lfloor (d-1)/2 \rfloor$ [2].
+**Quantum Error Suppression**
+- Attempts to prevent errors before they happen.
+- Quantum hardware is designed to be more resistant to noise.
+- Focuses on hardware-level noise reduction.
+- The most basic level of handling errors.
 
-Logical Error: A logical error occurs when a chain of errors physically connects one boundary of the lattice to the opposite boundary (e.g., Top-to-Bottom for Z operators).
+**Quantum Error Mitigation (used in NISQ era)**
+- Attempts to reduce the effect of errors after they happen.
+- Runs quantum circuits multiple times to estimate the error-free outcome.
+- Focuses on post-processing.
+- Useful for today's noisy quantum devices.
+- E.g., Zero-noise extrapolation, Probabilistic error cancellation, Quasi-probability method, Virtual distillation method, Subspace expansion method.
 
-- Criterion: If the final logical readout differs from the initialized state (e.g., $|0\rangle_L \rightarrow |1\rangle_L$) after correction, a logical error has occurred [2, 4].
-- Isolated Errors: Remaining physical errors that do not form a connecting chain are not considered logical errors as they do not flip the logical information.
+**Quantum Error Correction (QEC, required for FTQC)**
+- Attempts to detect and fix errors as they occur.
+- Spreads a qubit's value across multiple physical qubits for redundancy.
+- Focuses on real-time error detection and correction.
+- More complex but necessary for fault-tolerant quantum computing.
 
-**Description: A d=5 grid showing (A) a short, corrected chain and (B) a long chain connecting boundaries (Logical Failure).** 
+# 2. QEC Overview & Timing Constraints
+## Figure 1. 
+## Figure A horizontal timeline bar representing 1µs (1000ns). Color-code the sections: [Readout] -> [Tx] -> [Decoding] -> [Feedback] -> [Frame Update]. Mark "1µs" clearly as the Deadline.
 
+In superconducting systems, the QEC loop is a strict race against time. The system must detect and handle errors before the next batch of errors arrives.
 
-# 4. Pauli Tracking (Virtual Correction)
+**The 1µs Hardware Constraint**
+- The syndrome extraction circuit on processors like Google Sycamore takes approximately **1µs** **[1, 2]**. If decoding takes longer than this, errors accumulate (backlog), causing the system to fail.
 
-Concept: Modern QEC systems do not physically correct data qubits during the cycle due to latency and noise concerns. Instead, they employ Pauli Tracking (also known as working in the Pauli Frame) [5, 6].
+**The QEC Cycle (1µs Timeline)**
+A single QEC Round consists of the following mandatory steps within the 1000ns budget:
+- Readout & State Discrimination (300ns - 500ns): The FPGA converts analog microwave signals from the QPU into digital bits (0 or 1).
+- Transmission (tens of ns): Sending syndrome data from FPGA to the Decoder.
+- Decoding (200ns - 400ns): The Decoder calculates the error location using algorithms like MWPM (Minimum Weight Perfect Matching) or Union-Find.
+- Feedback Transmission: Sending correction data (2 bits per data qubit) back to the FPGA.
+- Frame Update: The FPGA updates the Pauli Frame record.
 
-Mechanism:
-- 1) No Physical Gates: The FPGA receives correction data but does not apply X or Z gates to the qubits.
-- 2) Classical Record: The FPGA maintains a "Pauli Frame" register that tracks the cumulative error state of each data qubit.
-- 3) Future Operations Update:
- - Gate Operations: When executing a new gate (e.g., Hadamard), the control processor modifies the instruction based on the tracked error (e.g., $Z \to X$) [2, 6].
- - Measurement: The final measurement result is flipped in software if the frame indicates an error.
-
-**Description: Flowchart: [Decoder Output] -> [FPGA Register Update] -> [Next Gate Instruction Modified].**
-
-# 5. Logical Measurement & Verification
-
-Concept: To determine the final state of a logical qubit (e.g., at Round 5 for $d=5$), the system must perform a Transversal Measurement of all data qubits and apply the cumulative correction from all previous rounds [1, 4].
-
-Calculation Formula: $$M_{final} = M_{raw} \oplus C_{accumulated}$$
-- $M_{raw}$: The parity calculated from the raw measurement of the logical operator chain (e.g., measuring data qubits along a column).
-- $C_{accumulated}$: The total error parity accumulated in the Pauli Frame from Round 1 to Round $d$.
-- $\oplus$: XOR operation (Modulo 2 addition).
 
 
 # References
+**[1]** Google Quantum AI. 2021. Exponential suppression of bit or phase errors with cyclic error correction. Nature 595, 7867 (2021), 383. https://doi.org/10.1038/ s41586-021-03588-y
+**[2]** Google Quantum AI. Accessed: June 19, 2021. Quantum Computer Datasheet. https://quantumai.google/hardware/datasheet/weber.pdf.
+**[3]**
+
+
+
+
 **[1]** Das, Poulami, Aditya Locharla, and Cody Jones. "Lilliput: a lightweight low-latency lookup-table decoder for near-term quantum error correction." Proceedings of the 27th ACM International Conference on Architectural Support for Programming Languages and Operating Systems. 2022.
 
 **[2]** Vittal, Suhas, Poulami Das, and Moinuddin Qureshi. "Astrea: Accurate quantum error-decoding via practical minimum-weight perfect-matching." Proceedings of the 50th Annual International Symposium on Computer Architecture. 2023.
