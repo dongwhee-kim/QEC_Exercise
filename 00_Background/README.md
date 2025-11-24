@@ -97,33 +97,35 @@ Ideally, physical errors are identified and corrected by the decoder. A **Logica
 - **Physical Error**: A microscopic error (e.g., bit-flip or phase-flip) on a single physical qubit. This is a frequent occurrence due to environmental noise.
 - **Logical Error**: A chain of physical errors connects one boundary of the surface code to the opposite boundary (e.g., Top-to-Bottom). This flips the encoded logical information ($|0\rangle_L \to |1\rangle_L$) despite the parity checks being satisfied..
 
-**Calculating Logical Error Rate (LER)**
+### Calculating Logical Error Rate (LER)
 
 To quantify performance, we calculate the Logical Error Rate (LER) by comparing the actual logical outcome against the expected outcome after error correction.
 
 **1. General Mechanism** To verify if a logical error occurred after $N$ rounds:
 
-    1) **Measure Data Qubits**: Perform a transversal measurement of all data qubits at the end of the circuit.
+1. **Measure Data Qubits**: Perform a transversal measurement of all data qubits at the end of the circuit.
+2. **Calculate Parity**: Compute the raw parity ($M_{raw}$) of the logical operator chain (e.g., the product of Z operators along a column).
+3. **Apply Correction**: Adjust the raw parity using the accumulated correction history ($C_{accumulated}$) derived from syndrome measurements.
+   $$
+   M_{final} = M_{raw} \oplus C_{accumulated}
+   $$
+   If $M_{final}$ differs from the initialized logical state, a logical error has occurred.
 
-    2) **Calculate Parity**: Compute the raw parity ($M_{raw}$) of the logical operator chain (e.g., the product of Z operators along a column).
+**2. Measurement in Stim [6] (Google's Framework)** In **Stim**, logical errors are measured by defining a logical frame using the `OBSERVABLE_INCLUDE` instruction. The LER calculation follows a **Monte Carlo** sampling process:
 
-    3) **Apply Correction**: Adjust the raw parity using the accumulated correction history ($C_{accumulated}$) derived from syndrome measurements. **$$M_{final} = M_{raw} \oplus C_{accumulated}$$** If $M_{final}$ differs from the initialized logical state, a logical error has occurred.
-
-**2. Measurement in Stim [6] (Google's Framework)** In **Stim**, logical errors are measured by defining a logical frame using the OBSERVABLE_INCLUDE instruction. The LER calculation follows a **Monte Carlo** sampling process:
-
-    1) **Define Logical Observable**: You explicitly tell Stim which physical qubits constitute the logical operator (e.g., OBSERVABLE_INCLUDE(0) Z 0 Z 5 ...) at the start and end of the circuit.
-
-    2) **Sample & Decode**:
-
-        1. Stim samples **shots** (detection events) from the noisy circuit.
-
-        2. A decoder (e.g., PyMatching, Fusion Blossom) processes these detection events to predict whether the logical observable has flipped ($P_{predicted} \in \{0, 1\}$).
-
-        3. Stim simultaneously tracks the ground truth of the actual logical frame flip caused by noise ($P_{actual}$).
-
-    3) **Verification**: A logical error is counted whenever the decoder's prediction fails to match the actual error realization: **$$Error_{logical} \iff P_{predicted} \neq P_{actual}$$**
-
-    4) Final LER: **$$LER = \frac{\text{Total Logical Errors}}{\text{Total Shots}}$$**
+1. **Define Logical Observable**: You explicitly tell Stim which physical qubits constitute the logical operator (e.g., `OBSERVABLE_INCLUDE(0) Z 0 Z 5 ...`) at the start and end of the circuit.
+2. **Sample & Decode**:
+    1. Stim samples **shots** (detection events) from the noisy circuit.
+    2. A decoder (e.g., PyMatching, Fusion Blossom) processes these detection events to predict whether the logical observable has flipped ($P_{predicted} \in \{0, 1\}$).
+    3. Stim simultaneously tracks the ground truth of the actual logical frame flip caused by noise ($P_{actual}$).
+3. **Verification**: A logical error is counted whenever the decoder's prediction fails to match the actual error realization:
+   $$
+   Error_{logical} \iff P_{predicted} \neq P_{actual}
+   $$
+4. **Final LER**:
+   $$
+   LER = \frac{\text{Total Logical Errors}}{\text{Total Shots}}
+   $$
 
 
 # 5. Advanced Scalability (Brief)
