@@ -2,7 +2,7 @@
 
 This document outlines the fundamental architecture and timing constraints of real-time Quantum Error Correction (QEC).
 
-**Specifically focusing on Surface Codes implemented on superconducting (IBM, Google) qubit systems.**
+**Specifically focusing on superconducting (IBM, Google) qubit systems.**
 
 # 1. What is QEC? Why is it needed?
 
@@ -10,6 +10,8 @@ This document outlines the fundamental architecture and timing constraints of re
 **Source: [IBM Quantum Roadmap 2025](https://www.ibm.com/quantum/blog/ibm-quantum-roadmap-2025)**
 
 ## Past -> Current (2025, Quantum Error Mitigation) -> Future (Quantum Error Correction)
+
+## Figure -> Each Errors
 
 Quantum information is fragile. Without intervention, environmental noise destroys quantum states (decoherence).
 
@@ -39,15 +41,19 @@ To build useful quantum computers, we must distinctively handle errors in three 
 - Useful for today's noisy quantum devices.
 - E.g., Zero-noise extrapolation, Probabilistic error cancellation, Quasi-probability method, Virtual distillation method, Subspace expansion method.
 
-**Quantum Error Correction (QEC, required for FTQC)**
+<span style="color: blue; font-weight: bold">Quantum Error Correction (QEC, required for FTQC)</span>
 - Attempts to detect and fix errors as they occur.
 - Spreads a qubit's value across multiple physical qubits for redundancy.
 - Focuses on real-time error detection and correction.
 - More complex but necessary for fault-tolerant quantum computing.
 
 # 2. QEC Overview & Timing Constraints
-## Figure 1. 
-## Figure A horizontal timeline bar representing 1µs (1000ns). Color-code the sections: [Readout] -> [Tx] -> [Decoding] -> [Feedback] -> [Frame Update]. Mark "1µs" clearly as the Deadline.
+![Configuration_Quantum_Classical_Interface](images/Configuration_Quantum_Classical_Interface.png)
+**Source: [Engineering the quantum-classical interface of solid-state qubits, npj Quantum Information, 2015](https://www.nature.com/articles/npjqi201511)**
+![QEC_Overview](images/QEC_Overview.png)
+![X_Stabilizer_Circuit](images/X_Stabilizer_Circuit.png)
+## Figure -> QEC Instruction (FPGA -> Qubits) -> Syndrome (Qubit -> (Analog Signal) [inside Readout Interface Hardware Box] FPGA (Using ADC, Digital Bits, Syndromes) -> Decoder) -> Decoding -> Correction information (Decoder -> FPGA)
+## Figure -> 1us constraints (ZZ stabilizers, XX stabilizers)
 
 In superconducting systems, the QEC loop is a strict race against time. The system must detect and handle errors before the next batch of errors arrives.
 
@@ -56,18 +62,38 @@ In superconducting systems, the QEC loop is a strict race against time. The syst
 
 **The QEC Cycle (1µs Timeline)**
 A single QEC Round consists of the following mandatory steps within the 1000ns budget:
-- Readout & State Discrimination (300ns - 500ns): The FPGA converts analog microwave signals from the QPU into digital bits (0 or 1).
-- Transmission (tens of ns): Sending syndrome data from FPGA to the Decoder.
-- Decoding (200ns - 400ns): The Decoder calculates the error location using algorithms like MWPM (Minimum Weight Perfect Matching) or Union-Find.
-- Feedback Transmission: Sending correction data (2 bits per data qubit) back to the FPGA.
-- Frame Update: The FPGA updates the Pauli Frame record.
+- **Readout & State Discrimination (300ns - 500ns)**: The FPGA converts analog microwave signals from the QPU into digital bits (0 or 1). Process: Qubit $\rightarrow$ Resonator $\rightarrow$ Quantum Amplifier (TWPA/JPA) $\rightarrow$ ADC $\rightarrow$ **FPGA Logic (Demodulation & Discrimination)** $\rightarrow$ Digital State (0 or 1).
+- **Transmission (tens of ns)**: Sending syndrome data from FPGA to the Decoder.
+- **Decoding (200ns - 400ns)**: The Decoder calculates the error location using algorithms like **MWPM (Minimum Weight Perfect Matching)** or **Union-Find**.
+- **Feedback Transmission**: The Decoder transmits a logical correction to the FPGA to reverse errors detected on the data qubits. The correction data is transmitted as a 2-bit signal per qubit. 00 (No Error) / 01 (Pauli-X Error) / 10 (Pauli-Z Error) / 11 (Pauli-Y Error).
+- **Frame Update**: The FPGA updates the Pauli Frame record (e.g., Pauli Tracking **[3-5]**).
+
+# 3. Decoding Architecture (Pauli Tracking [3-5])
+## Figure -> A flow diagram: [Decoder Output] -> [FPGA Register (Pauli Frame)] -> [Next Gate Instruction Modified]. Show that the physical Qubit remains untouched. 
+
+Modern QEC systems do **not** physically apply gates (X, Y, Z) to correct errors during the cycle because it introduces extra latency and noise. Instead, they use **Virtual Correction**.
+
+**Pauli Tracking (Pauli Frame)**
+- **Concept**: The FPGA maintains a "software ledger" (Pauli Frame) that tracks the current error state of every data qubit.
+- **Mechanism**:
+
+    1) The Decoder identifies an error (e.g., "Qubit 5 has a Z-flip").
+
+    2) This info is sent to the FPGA.
+
+    3) **Future Operations Update**: If the program needs to apply a gate to Qubit 5, the FPGA modifies the instruction on-the-fly (e.g., changing rotation direction) to account for the tracked error
+
+# 4. Logical Errors & LER Calculation
+
 
 
 
 # References
 **[1]** Google Quantum AI. 2021. Exponential suppression of bit or phase errors with cyclic error correction. Nature 595, 7867 (2021), 383. https://doi.org/10.1038/ s41586-021-03588-y
 **[2]** Google Quantum AI. Accessed: June 19, 2021. Quantum Computer Datasheet. https://quantumai.google/hardware/datasheet/weber.pdf.
-**[3]**
+**[3]** Paler, Alexandru, et al. "Software-based pauli tracking in fault-tolerant quantum circuits." 2014 Design, Automation & Test in Europe Conference & Exhibition (DATE). IEEE, 2014.
+**[4]** Chamberland, Christopher, Pavithran Iyer, and David Poulin. "Fault-tolerant quantum computing in the Pauli or Clifford frame with slow error diagnostics." Quantum 2 (2018): 43.
+**[5]** Knill, Emanuel. "Quantum computing with realistically noisy devices." Nature 434.7029 (2005): 39-44.
 
 
 
@@ -80,8 +106,3 @@ A single QEC Round consists of the following mandatory steps within the 1000ns b
 
 **[4]** "Suppressing quantum errors by scaling a surface code logical qubit." Nature 614, no. 7949 (2023): 676-681.
 
-**[5]** Paler, Alexandru, et al. "Software-based pauli tracking in fault-tolerant quantum circuits." 2014 Design, Automation & Test in Europe Conference & Exhibition (DATE). IEEE, 2014.
-
-**[6]** Chamberland, Christopher, Pavithran Iyer, and David Poulin. "Fault-tolerant quantum computing in the Pauli or Clifford frame with slow error diagnostics." Quantum 2 (2018): 43.
-
-**[7]** Knill, Emanuel. "Quantum computing with realistically noisy devices." Nature 434.7029 (2005): 39-44.
