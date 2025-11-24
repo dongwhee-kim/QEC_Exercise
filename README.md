@@ -13,7 +13,7 @@ I would like to express my gratitude to the people at ACES (Architectures for Em
 
 This will greatly aid your studies on Quantum Error Correction Codes
 
-### 📚 Classical Error Correction Codes Learning Resource [GitHub](https://github.com/dongwhee-kim/ECC-exercise)
+## Additional Resource - [Classical Error Correction Codes Exercise and Simulator](https://github.com/dongwhee-kim/ECC-exercise)
 
 Study the basics and applications of **Classical Error Correction Codes** (Hamming, Cyclic Redundancy Check, Reed-Solomon) with these **exercises** and **simulators** to help you build a strong foundation
 
