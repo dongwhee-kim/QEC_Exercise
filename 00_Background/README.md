@@ -41,17 +41,21 @@ To build useful quantum computers, we must distinctively handle errors in three 
 - Useful for today's noisy quantum devices.
 - E.g., Zero-noise extrapolation, Probabilistic error cancellation, Quasi-probability method, Virtual distillation method, Subspace expansion method.
 
-<h3 style="color: blue; font-weight: bold; margin: 0;">Quantum Error Correction (QEC, required for FTQC)</h3>
+![Quantum Error Correction (QEC, required for FTQC)](https://research.ibm.com/topics/quantum-error-correction)
 - Attempts to detect and fix errors as they occur.
 - Spreads a qubit's value across multiple physical qubits for redundancy.
 - Focuses on real-time error detection and correction.
 - More complex but necessary for fault-tolerant quantum computing.
 
 # 2. QEC Overview & Timing Constraints
+
 ![Configuration_Quantum_Classical_Interface](images/Configuration_Quantum_Classical_Interface.png)
 **Source: [Engineering the quantum-classical interface of solid-state qubits, npj Quantum Information, 2015](https://www.nature.com/articles/npjqi201511)**
+
 ![QEC_Overview](images/QEC_Overview.png)
+
 ![X_Stabilizer_Circuit](images/X_Stabilizer_Circuit.png)
+
 ## Figure -> QEC Instruction (FPGA -> Qubits) -> Syndrome (Qubit -> (Analog Signal) [inside Readout Interface Hardware Box] FPGA (Using ADC, Digital Bits, Syndromes) -> Decoder) -> Decoding -> Correction information (Decoder -> FPGA)
 ## Figure -> 1us constraints (ZZ stabilizers, XX stabilizers)
 
