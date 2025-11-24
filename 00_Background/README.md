@@ -78,14 +78,75 @@ A single QEC Round consists of the following mandatory steps within the 1000ns b
 Modern QEC systems do **not** physically apply gates (X, Y, Z) to correct errors during the cycle because it introduces extra latency and noise. Instead, they use **Virtual Correction**.
 
 **Pauli Tracking (Pauli Frame)**
-- **Concept**: The FPGA maintains a "software ledger" (Pauli Frame) that tracks the current error state of every data qubit.
-- **Mechanism**:
+- **Concept**: The FPGA maintains a "software ledger" (Pauli Frame) that tracks the current accumulated error state of every data qubit without physically touching them.
+- **Mechanism: How it works**
+    1) **Real-time Tracking (During Rounds)**:
 
-    1) The Decoder identifies an error (e.g., "Qubit 5 has a Z-flip").
+1. The Decoder identifies an error (e.g., "Qubit 5 has a Z-flip").
+2. This info is updated in the FPGA's Pauli Frame register.
+3. **Future Operations Update**: If the program needs to apply a gate to Qubit 5 later, the FPGA modifies the instruction on-the-fly (e.g., changing a rotation angle or axis) to account for the tracked error.
 
-    2) This info is sent to the FPGA.
+**Example: End-to-End Walkthrough ($d=3$ Rotated Surface Code)**
 
-    3) **Future Operations Update**: If the program needs to apply a gate to Qubit 5, the FPGA modifies the instruction on-the-fly (e.g., changing rotation direction) to account for the tracked error
+To illustrate how Pauli Tracking works across multiple rounds to prevent logical errors, let's consider a standard $d=3$ experiment.
+
+**Setup**:
+
+- Qubits: 9 Data Qubits ($D_1 \dots D_9$) in a $3 \times 3$ grid.
+- Ancillas: 4 X-Syndrome, 4 Z-Syndrome.
+- Logical Operator ($Z_L$): Defined along the **left boundary (Z-boundary)**.
+
+$$Z_L = Z(D_1) \cdot Z(D_4) \cdot Z(D_7)$$
+
+- Goal: Measure Logical Z after 3 Rounds of error correction.
+
+**Step 1**: Accumulate Error History (Rounds 1 ~ 3)
+- The FPGA updates the Pauli Frame based on decoder predictions.
+- For a Z-basis logical measurement, we track X-errors (bit-flips) because they flip the Z eigenvalue ($Z|1\rangle = -|1\rangle$).
+- Round 1: Decoder detects an X-error on $D_4$. Frame Update: Frame[D4] = X (Flip recorded).
+- Round 2: Decoder detects another X-error on $D_4$. Frame Update: Frame[D4] = X * X = I (Errors cancel out; Frame resets to Identity).
+- Round 3: Decoder detects an X-error on $D_7$.Frame Update: Frame[D7] = X (Flip recorded).
+- Note: The physical qubits ($D_4, D_7$) are never touched by correction pulses. They remain in their errored states.
+
+**Step 2**: Physical Measurement (Raw Data)
+- At the end of Round 3, we physically measure the boundary data qubits ($D_1, D_4, D_7$) to obtain the logical value.
+- Let's assume the initialized state was $|0\rangle_L$ (All $+1$).
+- Due to the uncorrected error on $D_7$, the physical measurement yields:
+
+$D_1 \to +1$ (No Error)
+
+$D_4 \to +1$ (Double error canceled physically)
+
+$D_7 \to -1$ (Active Physical Error)
+
+Raw Parity ($M_{raw}$) calculation: 
+
+$$M_{raw} = (+1) \times (+1) \times (-1) = -1$$ (This is incorrect; it suggests the state is $|1\rangle_L$.)
+
+**Step 3**: Software Correction & Logical Error Determination
+- The system queries the Pauli Frame for the qubits in the $Z_L$ chain ($D_1, D_4, D_7$) to fix the raw data.
+- Check Frame:
+
+$D_1$: Identity ($I$) $\rightarrow$ Correction $+1$
+
+$D_4$: Identity ($I$) $\rightarrow$ Correction $+1$
+
+$D_7$: Pauli $X$ (Active) $\rightarrow$ Correction $-1$ (Flip needed)
+
+Calculate Accumulated Correction ($C_{accumulated}$):
+
+$$C_{accumulated} = (+1) \times (+1) \times (-1) = -1$$
+
+Final Correction:
+
+$$M_{final} = M_{raw} \times C_{accumulated} = (-1) \times (-1) = +1$$
+
+**Conclusion (Logical Error Check)**:
+- Initialized State: $+1$ ($|0\rangle_L$)
+- Final Corrected Value ($M_{final}$): $+1$
+- Result: Since $M_{final}$ matches the initialized state, No Logical Error occurred. The Pauli Tracking successfully neutralized the physical errors. (If $M_{final}$ were $-1$, a logical error would be declared).
+
+
 
 # 4. Logical Errors & LER Calculation
 ## Figure -> A d=5 grid showing two scenarios: (A) A short, broken chain (Correctable, No Logical Error). (B) A complete chain connecting Top and Bottom (Logical Error/Failure).
