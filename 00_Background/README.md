@@ -41,7 +41,7 @@ To build useful quantum computers, we must distinctively handle errors in three 
 - Useful for today's noisy quantum devices.
 - E.g., Zero-noise extrapolation, Probabilistic error cancellation, Quasi-probability method, Virtual distillation method, Subspace expansion method.
 
-<span style="color: blue; font-weight: bold">Quantum Error Correction (QEC, required for FTQC)</span>
+<b><span style="color: blue">Quantum Error Correction (QEC, required for FTQC)</span></b>
 - Attempts to detect and fix errors as they occur.
 - Spreads a qubit's value across multiple physical qubits for redundancy.
 - Focuses on real-time error detection and correction.
