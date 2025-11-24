@@ -2,7 +2,7 @@
 
 # Objective
 - Understand the [[9, 1, 3]] Shor Code **[1]**, the first quantum error correction code, developed by Peter Shor. It encodes one logical qubit into nine physical qubits.
-- Understand the **Calderbank-Shor-Steane (CSS) codes** (e.g., Steane code, toric code, and surface code), the stabilizer codes obtained by combining together certain pairs of classical linear codes (see [[[7, 1, 3]] Steane Code](https://github.com/dongwhee-kim/QEC_Exercise/tree/main/003_Steane_Code)).
+- Understand the **Calderbank-Shor-Steane (CSS) codes** (e.g., Steane code, toric code, and surface code), the stabilizer codes obtained by combining together certain pairs of classical linear codes (see [[[7, 1, 3]] Steane Code](https://github.com/dongwhee-kim/QEC_Exercise/tree/main/01_Basic/003_Steane_Code)).
 - Perform a **Monte Carlo** analysis to classify outcomes into three categories: No Error (NE), Correctable Error (CE), and Uncorrectable Error (UE).
 - Understand the Shor Code's challenges, including high redundancy, hard computation [X, Z are easy].
 
