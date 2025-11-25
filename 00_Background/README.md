@@ -6,14 +6,10 @@ This document outlines the fundamental architecture and timing constraints of re
 
 # 1. What is QEC? Why is it needed?
 
-![IBM_Quantum_Development_Roadmap](images/IBM_Quantum_Development_Roadmap.webp)
-**Source: [IBM Quantum Roadmap 2025](https://www.ibm.com/quantum/blog/ibm-quantum-roadmap-2025)**
+![Qubits_Are_Noisy](images/Qubits_Are_Noisy.png)
+**Source: UT Austin - QUANTUM COMP SYS SW/ARCH PERSP (ECE 382V, Prof. Poulami Das)**
 
-![Error_Suppression_Mitigation_Correction](images/Error_Suppression_Mitigation_Correction.png)
-
-## Figure -> Each Errors
-
-Quantum information is fragile. Without intervention, environmental noise destroys quantum states (decoherence).
+**Key Challenges in Quantum Computing** - Quantum states are inherently **fragile**, suffering from information loss due to environmental **decoherence** and **computational errors** stemming from sources such as imperfect gate operations and measurements.
 
 **Quantum Error Characterization**
 - **Gate Error**: A deviation from the ideal quantum gate operation, causing incorrect quantum states due to noise or other imperfections. Error-rates typically in the range of **0.1-1%**.
@@ -26,7 +22,12 @@ Quantum information is fragile. Without intervention, environmental noise destro
     2) **Crosstalk Error**: Unintended coupling between qubits or control lines, where a signal intended for one qubit affects another (e.g., driving Qubit A inadvertently rotates Qubit B).
 - **Leakage Error (Not a Pauli Error)**: A type of error where the qubit transitions out of the computational subspace (states $|0\rangle$ and $|1\rangle$) into **higher energy levels (e.g., $|2\rangle$)**, rendering standard quantum error correction protocols ineffective without specific leakage reduction techniques (e.g., Leakage Reduction Circuit (LRC)).
 
-To build useful quantum computers, we must distinctively handle errors in three ways:
+![IBM_Quantum_Development_Roadmap](images/IBM_Quantum_Development_Roadmap.webp)
+**Source: [IBM Quantum Roadmap 2025](https://www.ibm.com/quantum/blog/ibm-quantum-roadmap-2025)**
+
+![Error_Suppression_Mitigation_Correction](images/Error_Suppression_Mitigation_Correction.png)
+
+To build useful quantum computers, we must efficiently handle errors in three ways:
 
 **Quantum Error Suppression**
 - Attempts to prevent errors before they happen.
@@ -47,6 +48,7 @@ To build useful quantum computers, we must distinctively handle errors in three 
 - Spreads a qubit's value across multiple physical qubits for redundancy.
 - Focuses on real-time error detection and correction.
 - More complex but necessary for fault-tolerant quantum computing.
+- E.g., Shor Code, Surface Code, QLDPC Code
 
 # 2. QEC Overview & Timing Constraints
 
