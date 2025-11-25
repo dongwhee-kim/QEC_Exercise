@@ -9,7 +9,7 @@ This document outlines the fundamental architecture and timing constraints of re
 ![IBM_Quantum_Development_Roadmap](images/IBM_Quantum_Development_Roadmap.webp)
 **Source: [IBM Quantum Roadmap 2025](https://www.ibm.com/quantum/blog/ibm-quantum-roadmap-2025)**
 
-## Past -> Current (2025, Quantum Error Mitigation) -> Future (Quantum Error Correction)
+![Error_Suppression_Mitigation_Correction](images/Error_Suppression_Mitigation_Correction.png)
 
 ## Figure -> Each Errors
 
@@ -33,13 +33,14 @@ To build useful quantum computers, we must distinctively handle errors in three 
 - Quantum hardware is designed to be more resistant to noise.
 - Focuses on hardware-level noise reduction.
 - The most basic level of handling errors.
+- E.g., Dynamic Decoupling
 
 **Quantum Error Mitigation (used in NISQ era)**
 - Attempts to reduce the effect of errors after they happen.
 - Runs quantum circuits multiple times to estimate the error-free outcome.
 - Focuses on post-processing.
 - Useful for today's noisy quantum devices.
-- E.g., Zero-noise extrapolation, Probabilistic error cancellation, Quasi-probability method, Virtual distillation method, Subspace expansion method.
+- E.g., Gate Cancellations, Instruction Reordering, Efficient-mapping to reduce SWAPs, Circuit Cutting / Circuit Knitting, State Transformation (e.g., Apply X gates before measurement), Noise Matrix, Zero-noise extrapolation, Probabilistic error cancellation, Quasi-probability method, Virtual distillation method, Subspace expansion method.
 
 [Quantum Error Correction (QEC, required for FTQC)](https://research.ibm.com/topics/quantum-error-correction)
 - Attempts to detect and fix errors as they occur.
