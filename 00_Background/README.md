@@ -56,32 +56,32 @@ To build useful quantum computers, we must efficiently handle errors in three wa
 
 ![Z_X_Stabilizer_Circuit](images/Z_X_Stabilizer_Circuit.png)
 
-## FTQCs 'repeatedly (Steps 1 $\rightarrow$ 8)' extract information about errors and corrects them in real-time
+## FTQCs 'periodically (Steps ❶  $\rightarrow$ ❽))' extract information about errors and corrects them in real-time
 
 In superconducting systems, Quantum Error Correction (QEC) relies on parity qubits to periodically extract information from data qubits via Z- or X-type stabilizer circuits (Surface Code has degree-4, four data qubits mapped to one parity qubit). This process, known as **syndrome extraction**, projects continuous errors into discrete Pauli errors. These cycles repeat from initialization until the data qubits are measured (called logical measurement), with each iteration termed a QEC cycle (or round). And the measurement outcome of the parity qubits is called a **syndrome**.
 
 However, maintaining this loop is a strict race against time. On the existing device technology (Google Sycamore), the syndrome extraction circuit completes in approximately **1 µs** **[1, 2]**. This imposes a hard time constraint: if the decoding software takes longer than this hardware cycle, errors accumulate in a 'backlog,' eventually causing system failure. Consequently, designing accurate, real-time decoders is a critical area of research.
 
 ### Summary: Cycle Definitions & Hardware Mapping
-- **Stabilizer Circuit Execution (Steps 1 $\rightarrow$ 6)**: Physically executing gates and measurements.
-- **QEC Cycle / Round (Physical Loop) (Steps 1 $\rightarrow$ 6)**: The hardware loop that repeats every cycle.
-- **Total Latency Budget (Steps 1 $\rightarrow$ 8)**: The entire closed-loop latency must be **< 1 µs** to correct errors to prevent accumulated errors.
+- **Stabilizer Circuit Execution (Steps ❶  $\rightarrow$ ❻))**: Physically executing gates and measurements.
+- **QEC Cycle / Round (Physical Loop) (Steps ❶  $\rightarrow$ ❻))**: The hardware loop that repeats every cycle.
+- **Total Latency Budget (Steps ❶  $\rightarrow$ ❽))**: The entire closed-loop latency must be **< 1 µs** to correct errors to prevent accumulated errors.
 
 **Detailed Description: The 1 µs QEC Feedback Loop**
 
 **I. Control Path (Downlink): Executing the circuit instructions. (Time: Part of the cycle schedule)**
-- 1. Pulse Generation (Digital): The Control Processor (FPGA) triggers the cycle by generating digital waveforms for stabilizer gates and readout pulses.
-- 2. D/A Conversion: DACs convert these digital streams into analog baseband signals with high precision.
-- 3. RF Conditioning (Analog): Signals are upconverted to microwave frequencies and sent to the Qubits.
+- Step ❶1. Pulse Generation (Digital): The Control Processor (FPGA) triggers the cycle by generating digital waveforms for stabilizer gates and readout pulses.
+- Step ❷.. D/A Conversion: DACs convert these digital streams into analog baseband signals with high precision.
+- Step ❸3. RF Conditioning (Analog): Signals are upconverted to microwave frequencies and sent to the Qubits.
 
 **II. Readout Path (Uplink): Extracting error information. (Time Budget: ~300 ns – 500 ns [7])**
-- 4. Readout Acquisition: The microwave signals interact with the qubits and resonators. The reflected signals, carrying the state information, travel back up the amplification chain.
-- 5. A/D Conversion: ADCs digitize the incoming RF signals for processing.
-- 6. State Discrimination (Syndrome Extraction): The FPGA performs real-time demodulation and integration on the raw data. **Outcome**: It determines the qubit states (0 or 1) and generates the syndrome.
+- Step ❹4. Readout Acquisition: The microwave signals interact with the qubits and resonators. The reflected signals, carrying the state information, travel back up the amplification chain.
+- Step ❺.. A/D Conversion: ADCs digitize the incoming RF signals for processing.
+- Step ❻.. State Discrimination (Syndrome Extraction): The FPGA performs real-time demodulation and integration on the raw data. **Outcome**: It determines the qubit states (0 or 1) and generates the syndrome.
 
 **III. Feedback Path (Logical Layer): Calculating and applying corrections. (Time Budget: ~200 ns – 400 ns)**
-- 7. Syndrome Transmission: The extracted syndrome bits (e.g., 01...10) are transmitted from the FPGA to the Host (with Decoder) via a low-latency interface (e.g., PCIe) within tens of ns.
-- 8. Correction (Pauli Frame Update): The Decoder calculates the error location (using **MWPM** or **Union-Find**) and sends correction instructions back to the FPGA. To minimize latency, the Control Processor typically updates the Pauli Frame (virtual software correction) for the next round instead of applying physical gates **[4, 5]**. **Correction Information - 2 bits per data qubit (00 [No Error], 01 [X Error], 10 [Z Error], 11 [Y Error])**
+- Step ❼.. Syndrome Transmission: The extracted syndrome bits (e.g., 01...10) are transmitted from the FPGA to the Host (with Decoder) via a low-latency interface (e.g., PCIe) within tens of ns.
+- Step ❽.. Correction (Pauli Frame Update): The Decoder calculates the error location (using **MWPM** or **Union-Find**) and sends correction instructions back to the FPGA. To minimize latency, the Control Processor typically updates the Pauli Frame (virtual software correction) for the next round instead of applying physical gates **[4, 5]**. **Correction Information - 2 bits per data qubit (00 [No Error], 01 [X Error], 10 [Z Error], 11 [Y Error])**
 
 
 # 3. Decoding Architecture (Pauli Tracking [3-5])
