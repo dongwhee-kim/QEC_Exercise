@@ -50,28 +50,39 @@ To build useful quantum computers, we must efficiently handle errors in three wa
 - More complex but necessary for fault-tolerant quantum computing.
 - E.g., Shor Code, Surface Code, QLDPC Code
 
-# 2. QEC Overview & Time Constraints
+# 2. FTQC Overview & Time Constraints
 
-![Configuration_Quantum_Classical_Interface](images/Configuration_Quantum_Classical_Interface.png)
-**Source: [Engineering the quantum-classical interface of solid-state qubits, npj Quantum Information, 2015](https://www.nature.com/articles/npjqi201511)**
-
-![QEC_Overview](images/QEC_Overview.png)
+![FTQC_Overview](images/FTQC_Overview.png)
 
 ![Z_X_Stabilizer_Circuit](images/Z_X_Stabilizer_Circuit.png)
 
-## Figure -> QEC Instruction (FPGA -> Qubits) -> Syndrome (Qubit -> (Analog Signal) [inside Readout Interface Hardware Box] FPGA (Using ADC, Digital Bits, Syndromes) -> Decoder) -> Decoding -> Correction information (Decoder -> FPGA)
+## FTQCs 'repeatedly' extract information about errors and corrects them in real-time
 
-In superconducting systems, Quantum Error Correction (QEC) relies on parity qubits to periodically extract information from data qubits via Z- or X-type stabilizer circuits. This process, known as **syndrome extraction**, projects continuous errors into discrete Pauli errors. These cycles repeat from initialization until the data qubits are measured (called logical measurement), with each iteration termed a QEC cycle (or round).
+In superconducting systems, Quantum Error Correction (QEC) relies on parity qubits to periodically extract information from data qubits via Z- or X-type stabilizer circuits (Surface Code has degree-4, four data qubits mapped to one parity qubit). This process, known as **syndrome extraction**, projects continuous errors into discrete Pauli errors. These cycles repeat from initialization until the data qubits are measured (called logical measurement), with each iteration termed a QEC cycle (or round). And the measurement outcome of the parity qubits is called a **syndrome**.
 
 However, maintaining this loop is a strict race against time. On the existing device technology (Google Sycamore), the syndrome extraction circuit completes in approximately **1 µs** **[1, 2]**. This imposes a hard time constraint: if the decoding software takes longer than this hardware cycle, errors accumulate in a 'backlog,' eventually causing system failure. Consequently, designing accurate, real-time decoders is a critical area of research.
 
-**The QEC Cycle (1µs Timeline)**
-A single QEC Round consists of the following mandatory steps within the 1000ns budget:
-- **Readout & State Discrimination (300ns - 500ns)**: The FPGA converts analog microwave signals from the QPU into digital bits (0 or 1). Process: Qubit $\rightarrow$ Resonator $\rightarrow$ Quantum Amplifier (TWPA/JPA) $\rightarrow$ ADC $\rightarrow$ **FPGA Logic (Demodulation & Discrimination)** $\rightarrow$ Digital State (0 or 1).
-- **Transmission (tens of ns)**: Sending syndrome data from FPGA to the Decoder.
-- **Decoding (200ns - 400ns)**: The Decoder calculates the error location using algorithms like **MWPM (Minimum Weight Perfect Matching)** or **Union-Find**.
-- **Feedback Transmission**: The Decoder transmits a logical correction to the FPGA to reverse errors detected on the data qubits. The correction data is transmitted as a 2-bit signal per qubit. 00 (No Error) / 01 (Pauli-X Error) / 10 (Pauli-Z Error) / 11 (Pauli-Y Error).
-- **Frame Update**: The FPGA updates the Pauli Frame record (e.g., Pauli Tracking **[3-5]**).
+### Summary: Cycle Definitions & Hardware Mapping
+- **Stabilizer Circuit Execution (Steps 1 $\rightarrow$ 6)**: Physically executing gates and measurements.
+- **QEC Cycle / Round (Physical Loop) (Steps 1 $\rightarrow$ 6)**: The hardware loop that repeats every cycle.
+- **Total Latency Budget (Steps 1 $\rightarrow$ 8)**: The entire closed-loop latency must be **< 1 µs** to correct errors to prevent accumulated errors.
+
+**Detailed Description: The 1 µs QEC Feedback Loop**
+
+**I. Control Path (Downlink): Executing the circuit instructions. (Time: Part of the cycle schedule)**
+- 1. Pulse Generation (Digital): The Control Processor (FPGA) triggers the cycle by generating digital waveforms for stabilizer gates and readout pulses.
+- 2. D/A Conversion: DACs convert these digital streams into analog baseband signals with high precision.
+- 3. RF Conditioning (Analog): Signals are upconverted to microwave frequencies and sent to the Qubits.
+
+**II. Readout Path (Uplink): Extracting error information. (Time Budget: ~300 ns – 500 ns [7])**
+- 4. Readout Acquisition: The microwave signals interact with the qubits and resonators. The reflected signals, carrying the state information, travel back up the amplification chain.
+- 5. A/D Conversion: ADCs digitize the incoming RF signals for processing.
+- 6. State Discrimination (Syndrome Extraction): The FPGA performs real-time demodulation and integration on the raw data. **Outcome**: It determines the qubit states (0 or 1) and generates the syndrome.
+
+**III. Feedback Path (Logical Layer): Calculating and applying corrections. (Time Budget: ~200 ns – 400 ns)**
+- 7. Syndrome Transmission: The extracted syndrome bits (e.g., 01...10) are transmitted from the FPGA to the Host (with Decoder) via a low-latency interface (e.g., PCIe) within tens of ns.
+- 8. Correction (Pauli Frame Update): The Decoder calculates the error location (using **MWPM** or **Union-Find**) and sends correction instructions back to the FPGA. To minimize latency, the Control Processor typically updates the Pauli Frame (virtual software correction) for the next round instead of applying physical gates **[4, 5]**.
+
 
 # 3. Decoding Architecture (Pauli Tracking [3-5])
 ## Figure -> A flow diagram: [Decoder Output] -> [FPGA Register (Pauli Frame)] -> [Next Gate Instruction Modified]. Show that the physical Qubit remains untouched. 
@@ -200,7 +211,7 @@ To run useful algorithms, we need more than just memory; we need logic operation
 
 
 # References
-**[1]** Google Quantum AI. 2021. Exponential suppression of bit or phase errors with cyclic error correction. Nature 595, 7867 (2021), 383. https://doi.org/10.1038/ s41586-021-03588-y
+**[1]** Google Quantum AI. 2021. Exponential suppression of bit or phase errors with cyclic error correction. Nature 595, 7867 (2021), 383. https://doi.org/10.1038/s41586-021-03588-y
 
 **[2]** Google Quantum AI. Accessed: June 19, 2021. Quantum Computer Datasheet. https://quantumai.google/hardware/datasheet/weber.pdf.
 
@@ -212,6 +223,7 @@ To run useful algorithms, we need more than just memory; we need logic operation
 
 **[6]** Gidney, Craig. "Stim: a fast stabilizer circuit simulator." Quantum 5 (2021): 497.
 
+**[7]** "Suppressing quantum errors by scaling a surface code logical qubit." Nature 614, no. 7949 (2023): 676-681.
 
 
 **[1]** Das, Poulami, Aditya Locharla, and Cody Jones. "Lilliput: a lightweight low-latency lookup-table decoder for near-term quantum error correction." Proceedings of the 27th ACM International Conference on Architectural Support for Programming Languages and Operating Systems. 2022.

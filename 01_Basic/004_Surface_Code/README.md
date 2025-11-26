@@ -27,7 +27,10 @@
 1) Regular Surface Code Layout - Data Qubit (White), X-ancilla Qubit (Yellow), Z-ancilla Qubit(Green)
 <img src="images/Regular_Surface_Code.png" alt="Regular_Surface_Code" width="50%">
 
-2) Z Decoding Graph (with Weight)
+2) Z/X Stabilizer Circuits
+![Z_X_Stabilizer_Circuit](images/Z_X_Stabilizer_Circuit.png)
+
+3) Z Decoding Graph (with Weight)
 ![Z_Decoding_Graph](images/Z_Decoding_Graph.png)
 
 # To do
