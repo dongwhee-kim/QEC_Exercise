@@ -56,7 +56,7 @@ To build useful quantum computers, we must efficiently handle errors in three wa
 
 ![Z_X_Stabilizer_Circuit](images/Z_X_Stabilizer_Circuit.png)
 
-## FTQCs 'repeatedly' extract information about errors and corrects them in real-time
+## FTQCs 'repeatedly (Steps 1 $\rightarrow$ 8)' extract information about errors and corrects them in real-time
 
 In superconducting systems, Quantum Error Correction (QEC) relies on parity qubits to periodically extract information from data qubits via Z- or X-type stabilizer circuits (Surface Code has degree-4, four data qubits mapped to one parity qubit). This process, known as **syndrome extraction**, projects continuous errors into discrete Pauli errors. These cycles repeat from initialization until the data qubits are measured (called logical measurement), with each iteration termed a QEC cycle (or round). And the measurement outcome of the parity qubits is called a **syndrome**.
 
@@ -81,7 +81,7 @@ However, maintaining this loop is a strict race against time. On the existing de
 
 **III. Feedback Path (Logical Layer): Calculating and applying corrections. (Time Budget: ~200 ns – 400 ns)**
 - 7. Syndrome Transmission: The extracted syndrome bits (e.g., 01...10) are transmitted from the FPGA to the Host (with Decoder) via a low-latency interface (e.g., PCIe) within tens of ns.
-- 8. Correction (Pauli Frame Update): The Decoder calculates the error location (using **MWPM** or **Union-Find**) and sends correction instructions back to the FPGA. To minimize latency, the Control Processor typically updates the Pauli Frame (virtual software correction) for the next round instead of applying physical gates **[4, 5]**.
+- 8. Correction (Pauli Frame Update): The Decoder calculates the error location (using **MWPM** or **Union-Find**) and sends correction instructions (2 bits per data qubit, 00 [No Error] / 01 [X Error] / 10 [Z Error] / 11 [Y Error]) back to the FPGA. To minimize latency, the Control Processor typically updates the Pauli Frame (virtual software correction) for the next round instead of applying physical gates **[4, 5]**.
 
 
 # 3. Decoding Architecture (Pauli Tracking [3-5])
