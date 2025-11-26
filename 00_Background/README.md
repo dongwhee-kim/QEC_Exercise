@@ -50,22 +50,21 @@ To build useful quantum computers, we must efficiently handle errors in three wa
 - More complex but necessary for fault-tolerant quantum computing.
 - E.g., Shor Code, Surface Code, QLDPC Code
 
-# 2. QEC Overview & Timing Constraints
+# 2. QEC Overview & Time Constraints
 
 ![Configuration_Quantum_Classical_Interface](images/Configuration_Quantum_Classical_Interface.png)
 **Source: [Engineering the quantum-classical interface of solid-state qubits, npj Quantum Information, 2015](https://www.nature.com/articles/npjqi201511)**
 
 ![QEC_Overview](images/QEC_Overview.png)
 
-![X_Stabilizer_Circuit](images/X_Stabilizer_Circuit.png)
+![Z_X_Stabilizer_Circuit](images/Z_X_Stabilizer_Circuit.png)
 
 ## Figure -> QEC Instruction (FPGA -> Qubits) -> Syndrome (Qubit -> (Analog Signal) [inside Readout Interface Hardware Box] FPGA (Using ADC, Digital Bits, Syndromes) -> Decoder) -> Decoding -> Correction information (Decoder -> FPGA)
-## Figure -> 1us constraints (ZZ stabilizers, XX stabilizers)
 
 In superconducting systems, the QEC loop is a strict race against time. The system must detect and handle errors before the next batch of errors arrives.
 
-**The 1µs Hardware Constraint**
-- The syndrome extraction circuit on processors like Google Sycamore takes approximately **1µs** **[1, 2]**. If decoding takes longer than this, errors accumulate (backlog), causing the system to fail.
+**The 1µs Time Constraint**
+- The syndrome extraction circuit on processors like Google Sycamore takes approximately **1µs** **[1, 2]**. If decoding takes longer than this, errors accumulate (backlog), causing the system to fail. So, designing accurate and real-time decoders is an active area of research.
 
 **The QEC Cycle (1µs Timeline)**
 A single QEC Round consists of the following mandatory steps within the 1000ns budget:
@@ -203,10 +202,15 @@ To run useful algorithms, we need more than just memory; we need logic operation
 
 # References
 **[1]** Google Quantum AI. 2021. Exponential suppression of bit or phase errors with cyclic error correction. Nature 595, 7867 (2021), 383. https://doi.org/10.1038/ s41586-021-03588-y
+
 **[2]** Google Quantum AI. Accessed: June 19, 2021. Quantum Computer Datasheet. https://quantumai.google/hardware/datasheet/weber.pdf.
+
 **[3]** Paler, Alexandru, et al. "Software-based pauli tracking in fault-tolerant quantum circuits." 2014 Design, Automation & Test in Europe Conference & Exhibition (DATE). IEEE, 2014.
+
 **[4]** Chamberland, Christopher, Pavithran Iyer, and David Poulin. "Fault-tolerant quantum computing in the Pauli or Clifford frame with slow error diagnostics." Quantum 2 (2018): 43.
+
 **[5]** Knill, Emanuel. "Quantum computing with realistically noisy devices." Nature 434.7029 (2005): 39-44.
+
 **[6]** Gidney, Craig. "Stim: a fast stabilizer circuit simulator." Quantum 5 (2021): 497.
 
 
