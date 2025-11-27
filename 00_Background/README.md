@@ -22,12 +22,16 @@ This document outlines the fundamental architecture and timing constraints of re
     2) **Crosstalk Error**: Unintended coupling between qubits or control lines, where a signal intended for one qubit affects another (e.g., driving Qubit A inadvertently rotates Qubit B).
 - **Leakage Error (Not a Pauli Error)**: A type of error where the qubit transitions out of the computational subspace (states $|0\rangle$ and $|1\rangle$) into **higher energy levels (e.g., $|2\rangle$)**, rendering standard quantum error correction protocols ineffective without specific leakage reduction techniques (e.g., Leakage Reduction Circuit (LRC)).
 
+![Error_Gap](images/Error_Gap.png)
+**Source: UT Austin - QUANTUM COMP SYS SW/ARCH PERSP (ECE 382V, Prof. Poulami Das)**
+
+**Bridging the Error Gap**
+Current physical qubits suffer from relatively high error rates (typically **$\sim 10^{-3}$**). However, practical applications (e.g., large-scale factorization or chemical simulations) demand extremely high reliability, often requiring error rates as low as **$10^{-15}$**. To bridge this massive gap and build a useful Fault-Tolerant Quantum Computer (FTQC), we must efficiently handle errors in three fundamental ways (Quantum Error Suppression, Quantum Error Mitigation, and Quantum Error Correction).
+
 ![IBM_Quantum_Development_Roadmap](images/IBM_Quantum_Development_Roadmap.webp)
 **Source: [IBM Quantum Roadmap 2025](https://www.ibm.com/quantum/blog/ibm-quantum-roadmap-2025)**
 
 ![Error_Suppression_Mitigation_Correction](images/Error_Suppression_Mitigation_Correction.png)
-
-To build useful quantum computers, we must efficiently handle errors in three ways:
 
 **Quantum Error Suppression**
 - Attempts to prevent errors before they happen.
@@ -58,7 +62,7 @@ To build useful quantum computers, we must efficiently handle errors in three wa
 
 ## FTQCs 'periodically (Steps ❶  $\rightarrow$ ❽)' extract information about errors and corrects them in real-time
 
-In superconducting systems, Quantum Error Correction (QEC) relies on parity qubits to periodically extract information from data qubits via Z- or X-type stabilizer circuits (Surface Code has degree-4, four data qubits mapped to one parity qubit). This process, known as **syndrome extraction**, projects continuous errors into discrete Pauli errors. These cycles repeat from initialization until the data qubits are measured (called logical measurement), with each iteration termed a QEC cycle (or round). And the measurement outcome of the parity qubits is called a **syndrome**.
+In superconducting systems, Quantum Error Correction (QEC) relies on parity qubits to periodically extract information from data qubits via Z- or X-type stabilizer circuits (Surface Code has **degree-4**, four data qubits mapped to one parity qubit). This process, known as **syndrome extraction**, projects continuous errors into discrete Pauli errors. These cycles repeat from initialization until the data qubits are measured (called logical measurement), with each iteration termed a QEC cycle (or round). And the measurement outcome of the parity qubits is called a **syndrome**.
 
 However, maintaining this loop is a strict race against time. On the existing device technology (Google Sycamore), the syndrome extraction circuit completes in approximately **1 µs** **[1, 2]**. This imposes a hard time constraint: if the decoding software takes longer than this hardware cycle, errors accumulate in a 'backlog,' eventually causing system failure. Consequently, designing accurate, real-time decoders is a critical area of research.
 
@@ -83,121 +87,83 @@ However, maintaining this loop is a strict race against time. On the existing de
 - Step ❼. Syndrome Transmission: The extracted syndrome bits (e.g., 01...10) are transmitted from the FPGA to the Host (with Decoder) via a low-latency interface (e.g., PCIe) within tens of ns.
 - Step ❽. Correction (Pauli Frame Update): The Decoder calculates the error location (using **MWPM** or **Union-Find**) and sends correction instructions back to the FPGA. To minimize latency, the Control Processor typically updates the Pauli Frame (virtual software correction) for the next round instead of applying physical gates **[4, 5]**. **Correction Information - 2 bits per data qubit (00 [No Error], 01 [X Error], 10 [Z Error], 11 [Y Error])**
 
+# 3. Decoding Architecture: Pauli Tracking [3-5] & Time Axis
 
-# 3. Decoding Architecture (Pauli Tracking [3-5])
 ## Figure -> A flow diagram: [Decoder Output] -> [FPGA Register (Pauli Frame)] -> [Next Gate Instruction Modified]. Show that the physical Qubit remains untouched. 
 
-Modern QEC systems do **not** physically apply gates (X, Y, Z) to correct errors during the cycle because it introduces extra latency and noise. Instead, they use **Virtual Correction**.
+To satisfy the strict **1 µs latency budget**, we avoid applying physical correction pulses (e.g., applying a physical $X$ gate) inside the loop. Instead, we utilize **Pauli Tracking** and accumulate error information over time.
 
-**Pauli Tracking (Pauli Frame)**
-- **Concept**: The FPGA maintains a "software ledger" (Pauli Frame) that tracks the current accumulated error state of every data qubit without physically touching them.
-- **Mechanism: How it works**
-    1) **Real-time Tracking (During Rounds)**:
+**I.Virtual Correction (Zero Latency)**
+- **Concept**: Instead of physically "fixing" the qubit state with a microwave pulse, the Control Processor (FPGA) updates a classical software reference frame.
+- **Mechanism**: If the Decoder identifies an error (e.g., "X-error on Data Qubit $D_1$"), the system merely records this in the **Pauli Frame**.
+- **Benefit**: The QEC cycle proceeds immediately without the delay of pulse modulation.
 
-1. The Decoder identifies an error (e.g., "Qubit 5 has a Z-flip").
-2. This info is updated in the FPGA's Pauli Frame register.
-3. **Future Operations Update**: If the program needs to apply a gate to Qubit 5 later, the FPGA modifies the instruction on-the-fly (e.g., changing a rotation angle or axis) to account for the tracked error.
+**II. The Time Axis: Waiting for $d$ Rounds**
 
-**Example: End-to-End Walkthrough ($d=3$ Rotated Surface Code)**
-
-To illustrate how Pauli Tracking works across multiple rounds to prevent logical errors, let's consider a standard $d=3$ experiment.
-
-**Setup**:
-
-- **Qubits**: 9 Data Qubits ($D_1 \dots D_9$) in a $3 \times 3$ grid.
-- **Ancillas**: 4 X-Syndrome, 4 Z-Syndrome.
-- **Logical Operator ($Z_L$)**: Defined along the **left boundary (Z-boundary)**.
-
-$$Z_L = Z(D_1) \cdot Z(D_4) \cdot Z(D_7)$$
-
-- **Goal**: Measure Logical Z after 3 Rounds of error correction.
-
-**Step 1: Accumulate Error History (Rounds 1 ~ 3)**
-- The FPGA updates the Pauli Frame based on decoder predictions.
-- For a Z-basis logical measurement, we track X-errors (bit-flips) because they flip the Z eigenvalue ($Z|1\rangle = -|1\rangle$).
-- Round 1: Decoder detects an X-error on $D_4$. Frame Update: Frame[D4] = X (Flip recorded).
-- Round 2: Decoder detects another X-error on $D_4$. Frame Update: Frame[D4] = X * X = I (Errors cancel out; Frame resets to Identity).
-- Round 3: Decoder detects an X-error on $D_7$.Frame Update: Frame[D7] = X (Flip recorded).
-- Note: The physical qubits ($D_4, D_7$) are never touched by correction pulses. They remain in their errored states.
-
-**Step 2: Physical Measurement (Raw Data)**
-- At the end of Round 3, we physically measure the boundary data qubits ($D_1, D_4, D_7$) to obtain the logical value.
-- Let's assume the initialized state was $|0\rangle_L$ (All $+1$).
-- Due to the uncorrected error on $D_7$, the physical measurement yields:
-
-$D_1 \to +1$ (No Error)
-
-$D_4 \to +1$ (Double error canceled physically)
-
-$D_7 \to -1$ (Active Physical Error)
-
-**Raw Parity ($M_{raw}$) calculation**: 
-
-$$M_{raw} = (+1) \times (+1) \times (-1) = -1$$ (This is incorrect; it suggests the state is $|1\rangle_L$.)
-
-**Step 3: Software Correction & Logical Error Determination**
-- The system queries the Pauli Frame for the qubits in the $Z_L$ chain ($D_1, D_4, D_7$) to fix the raw data.
-- Check Frame:
-
-$D_1$: Identity ($I$) $\rightarrow$ Correction $+1$
-
-$D_4$: Identity ($I$) $\rightarrow$ Correction $+1$
-
-$D_7$: Pauli $X$ (Active) $\rightarrow$ Correction $-1$ (Flip needed)
-
-**Calculate Accumulated Correction ($C_{accumulated}$)**:
-
-$$C_{accumulated} = (+1) \times (+1) \times (-1) = -1$$
-
-**Final Correction**:
-
-$$M_{final} = M_{raw} \times C_{accumulated} = (-1) \times (-1) = +1$$
-
-**Conclusion (Logical Error Check)**:
-- Initialized State: $+1$ ($|0\rangle_L$)
-- Final Corrected Value ($M_{final}$): $+1$
-- Result: Since $M_{final}$ matches the initialized state, No Logical Error occurred. The Pauli Tracking successfully neutralized the physical errors. (If $M_{final}$ were $-1$, a logical error would be declared).
+Single-shot measurements are unreliable due to physical measurement errors. Therefore, we do not make a final decision based on a single cycle.
+- **Accumulation**: We repeat the QEC cycle for $d$ rounds (where $d$ is the code distance of Surface Code).
+- **Spacetime Volume**: The Host/Decoder collects the syndrome history over these $d$ rounds, creating a 3D spacetime decoding graph ($2D$ space $+ 1D$ time). **Background: $m = (d - 1)$ rounds are required to match the code's error correction capability [8].**
+- **Delayed Correction**: The Decoder solves the matching problem (MWPM) across this entire window to identify the most probable error chain.
+- **Application**: Only after the $d$ rounds are complete (or when a logical operation is required), the accumulated Pauli Frame correction is applied to the **Final Measurement** results or sent to the Host for logical state validation. 
 
 
-
-# 4. Logical Errors & LER Calculation
+# 4. Logical Errors & LER Calculation ($d=3$ Rotated Surface Code)
 ## Figure -> A d=5 grid showing two scenarios: (A) A short, broken chain (Correctable, No Logical Error). (B) A complete chain connecting Top and Bottom (Logical Error/Failure).
 
+This section defines a **Logical Error** as a failure to preserve the encoded information after correction and details the step-by-step simulation workflow to calculate the **Logical Error Rate (LER)**.
 
-Ideally, physical errors are identified and corrected by the decoder. A **Logical Error** occurs when the correction mechanism fails, resulting in corrupted logical information.
+**I. Physical vs. Logical Error**
 
-**Physical vs. Logical Error**
-- **Physical Error**: A microscopic error (e.g., bit-flip or phase-flip) on a single physical qubit. This is a frequent occurrence due to environmental noise.
-- **Logical Error**: A chain of physical errors connects one boundary of the surface code to the opposite boundary (e.g., Top-to-Bottom). This flips the encoded logical information ($|0\rangle_L \to |1\rangle_L$) despite the parity checks being satisfied..
+Before calculating the error rate, we must distinguish between an error on a device and an error on information.
+- **Physical Error**: A microscopic error (e.g., bit-flip or phase-flip) occurring on a single physical qubit. This is a frequent occurrence due to environmental noise and imperfect gates.
+- **Logical Error (The Failure Event)**: A chain of physical errors that spans across the lattice, connecting opposite boundaries.
+    - **Logical X Error ($X_L$ Error)**: A chain of physical X-errors connecting the **Left $\leftrightarrow$ Right** boundaries. Effect: Flips the Z-basis logical state ($|0\rangle_L \leftrightarrow |1\rangle_L$).
+    - **Logical Z Error ($Z_L$ Error)**: A chain of physical Z-errors connecting the **Top $\leftrightarrow$ Bottom** boundaries. Effect: Flips the X-basis logical state ($|+\rangle_L \leftrightarrow |-\rangle_L$).
 
-### Calculating Logical Error Rate (LER)
+![Rotated_Surface_Code](images/Rotated_Surface_Code.png)
 
-To quantify performance, we calculate the Logical Error Rate (LER) by comparing the actual logical outcome against the expected outcome after error correction.
+**II. Simulation Setup: The $d=3$ Lattice**
 
-**1. General Mechanism** To verify if a logical error occurred after $N$ rounds:
+To verify if the Quantum Error Correction was successful, we simulate a **Distance-3 ($d=3$)** Rotated Surface Code.
+- **Data Qubits** ($d$): 9 qubits carrying the logical information ($D_0 \dots D_8$).
+- **Z-Stabilizers** (Green Circles): Measure the Z-parity of neighboring data qubits. Detect $X$ errors.
+- **X-Stabilizers** (Yellow Circles): Measure the X-parity of neighboring data qubits. Detect $Z$ errors.
 
-1. **Measure Data Qubits**: Perform a transversal measurement of all data qubits at the end of the circuit.
-2. **Calculate Parity**: Compute the raw parity ($M_{raw}$) of the logical operator chain (e.g., the product of Z operators along a column).
-3. **Apply Correction**: Adjust the raw parity using the accumulated correction history ($C_{accumulated}$) derived from syndrome measurements.
+In a Rotated Surface Code, the lattice boundaries define the logical operators. For our $d=3$ setup:
+- **Logical Z Operator ($Z_L$)**: A chain of $Z$ operators connecting the **Top (Smooth) and Bottom (Smooth)** boundaries. 
+    - Path: e.g., $Z(D_0) \otimes Z(D_3) \otimes Z(D_6)$.
+- **Logical X Operator ($X_L$)**: A chain of $X$ operators connecting the **Left (Rough) and Right (Rough)** boundaries.
+    - Path: e.g., $X(D_6) \otimes X(D_7) \otimes X(D_8)$
 
-**$$M_{final} = M_{raw} \oplus C_{accumulated}$$**
-   
-If $M_{final}$ differs from the initialized logical state, a logical error has occurred.
 
-**2. Measurement in Stim [6] (Google's Framework)** In **Stim**, logical errors are measured by defining a logical frame using the `OBSERVABLE_INCLUDE` instruction. The LER calculation follows a **Monte Carlo** sampling process:
+**III. Logical Error Rate (LER) Calculation Flow**
 
-1. **Define Logical Observable**: You explicitly tell Stim which physical qubits constitute the logical operator (e.g., `OBSERVABLE_INCLUDE(0) Z 0 Z 5 ...`) at the start and end of the circuit.
-2. **Sample & Decode**:
-    1. Stim samples **shots** (detection events) from the noisy circuit.
-    2. A decoder (e.g., PyMatching, Fusion Blossom) processes these detection events to predict whether the logical observable has flipped ($P_{predicted} \in \{0, 1\}$).
-    3. Stim simultaneously tracks the ground truth of the actual logical frame flip caused by noise ($P_{actual}$).
-3. **Verification**: A logical error is counted whenever the decoder's prediction fails to match the actual error realization: 
+We determine the logical error probability by comparing the measured logical parity with the expected value.
 
-**$$Error_{logical} \iff P_{predicted} \neq P_{actual}$$**
+**Step 1: Initialization (State Preparation)** 
+- Prepare the logical qubit in $|0\rangle_L$.
+- Physically, all 9 Data Qubits ($D_0 \dots D_8$) are initialized to $|0\rangle$.
 
-4. **Final LER**: 
+**Step 2: The QEC Loop (Error Logging)**
+- Execute the QEC cycle for $d$ rounds.
+- The Decoder identifies errors and updates the **X-Error Log (Pauli Frame)**.
+    - Why X-Log? Since we initialized in $|0\rangle$ (Z-basis), we are protecting against bit-flips (X-errors). We must track X-errors that could form a **Left-Right chain**.
 
-**$$LER = \frac{\text{Total Logical Errors}}{\text{Total Shots}}$$**
+**Step 3: Logical Measurement Computation** To check if the state is still $|0\rangle_L$, we measure the Logical Z Operator ($Z_L$).
+- Select Logical Chain: The $Z_L$ operator corresponds to the column $D_0 - D_3 - D_6$ (connecting Top-Bottom).
+- Bitwise XOR (Apply Correction):
+    - Retrieve the Raw Measurement ($m$) and the X-Error Log ($log$) for qubits on this chain ($D_0, D_3, D_6$).
+    - Apply correction: $$m'_{i} = m_{i} \oplus log_{i}$$
+- Reduction XOR (Parity Check):
+    - Compute the final logical measurement bit ($M_{logical}$) by XORing the corrected bits along the chain.
+    - $$M_{logical} = m'_{0} \oplus m'_{3} \oplus m'_{6}$$
+
+**Step 4: Verdict & LER**
+- **Verdict**:
+    - If $M_{logical} == 0$: **Success** (State is $|0\rangle_L$).
+    - If $M_{logical} == 1$: **Logical Error (Fail)**.
+    - Interpretation: A **Left-Right chain of X-errors** must have crossed our vertical measurement line an odd number of times, flipping the logical parity to $|1\rangle_L$.
+- **Calculation**: $$P_{logical} \approx \frac{\text{Total Failures}}{\text{Total Experiments}}$$
 
 
 # 5. Advanced Scalability (Brief)
@@ -225,12 +191,5 @@ To run useful algorithms, we need more than just memory; we need logic operation
 
 **[7]** "Suppressing quantum errors by scaling a surface code logical qubit." Nature 614, no. 7949 (2023): 676-681.
 
-
-**[1]** Das, Poulami, Aditya Locharla, and Cody Jones. "Lilliput: a lightweight low-latency lookup-table decoder for near-term quantum error correction." Proceedings of the 27th ACM International Conference on Architectural Support for Programming Languages and Operating Systems. 2022.
-
-**[2]** Vittal, Suhas, Poulami Das, and Moinuddin Qureshi. "Astrea: Accurate quantum error-decoding via practical minimum-weight perfect-matching." Proceedings of the 50th Annual International Symposium on Computer Architecture. 2023.
-
-**[3]** Ryan-Anderson, Ciaran, et al. "Realization of real-time fault-tolerant quantum error correction." Physical Review X 11.4 (2021): 041058.
-
-**[4]** "Suppressing quantum errors by scaling a surface code logical qubit." Nature 614, no. 7949 (2023): 676-681.
+**[8]** Stephens, Ashley M. "Fault-tolerant thresholds for quantum error correction with the surface code." Physical Review A 89.2 (2014): 022321.
 
