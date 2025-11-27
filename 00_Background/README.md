@@ -159,11 +159,11 @@ We determine the logical error probability by comparing the measured logical par
 - Bitwise XOR (Apply Correction):
     - Perform a bitwise XOR between the Raw Measurement outcome and the Error Log.
     
-    - $$m'_{i} = m_{i} \oplus \text{log}_{i}$$
+    $$m'_{i} = m_{i} \oplus \text{log}_{i}$$
 - Reduction XOR (Parity Check):
     - Compute the final logical measurement bit ($M_{logical}$) by XORing the corrected bits along the chain.
 
-    - $$M_{logical} = m'_{0} \oplus m'_{3} \oplus m'_{6}$$
+    $$M_{logical} = m'_{0} \oplus m'_{3} \oplus m'_{6}$$
 
 **Step 4: Verdict & LER**
 - **Verdict**:
