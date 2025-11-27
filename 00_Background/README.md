@@ -26,7 +26,9 @@ This document outlines the fundamental architecture and timing constraints of re
 **Source: UT Austin - QUANTUM COMP SYS SW/ARCH PERSP (ECE 382V, Prof. Poulami Das)**
 
 **Bridging the Error Gap**
-Current physical qubits suffer from relatively high error rates (typically **$\sim 10^{-3}$**). However, practical applications (e.g., large-scale factorization or chemical simulations) demand extremely high reliability, often requiring error rates as low as **$10^{-15}$**. To bridge this massive gap and build a useful Fault-Tolerant Quantum Computer (FTQC), we must efficiently handle errors in three fundamental ways (Quantum Error Suppression, Quantum Error Mitigation, and Quantum Error Correction).
+- Current physical qubits suffer from relatively high error rates (typically **$\sim 10^{-3}$**).
+- However, practical applications (e.g., large-scale factorization or chemical simulations) demand extremely high reliability, often requiring error rates as low as **$10^{-15}$**.
+- To bridge this massive gap and build a useful Fault-Tolerant Quantum Computer (FTQC), we must efficiently handle errors in three fundamental ways - Quantum Error Suppression, Quantum Error Mitigation, and Quantum Error Correction.
 
 ![IBM_Quantum_Development_Roadmap](images/IBM_Quantum_Development_Roadmap.webp)
 **Source: [IBM Quantum Roadmap 2025](https://www.ibm.com/quantum/blog/ibm-quantum-roadmap-2025)**
@@ -142,7 +144,7 @@ We determine the logical error probability by comparing the measured logical par
 
 **Step 1: Initialization (State Preparation)** 
 - Prepare the logical qubit in $|0\rangle_L$.
-- Physically, all 9 Data Qubits ($D_0 \dots D_8$) are initialized to $|0\rangle$.
+- Physically, all 9 Data Qubits ($d0 \dots d8$) are initialized to $|0\rangle$.
 
 **Step 2: The QEC Loop (Error Logging)**
 - Execute the QEC cycle for $d$ rounds.
@@ -150,20 +152,46 @@ We determine the logical error probability by comparing the measured logical par
     - Why X-Log? Since we initialized in $|0\rangle$ (Z-basis), we are protecting against bit-flips (X-errors). We must track X-errors that could form a **Left-Right chain**.
 
 **Step 3: Logical Measurement Computation** To check if the state is still $|0\rangle_L$, we measure the Logical Z Operator ($Z_L$).
-- Select Logical Chain: The $Z_L$ operator corresponds to the column $D_0 - D_3 - D_6$ (connecting Top-Bottom).
+- Select Logical Chain: The $Z_L$ operator corresponds to the column $d0 - d3 - d6$ (connecting Top-Bottom).
 - Bitwise XOR (Apply Correction):
-    - Retrieve the Raw Measurement ($m$) and the X-Error Log ($log$) for qubits on this chain ($D_0, D_3, D_6$).
-    - Apply correction: $$m'_{i} = m_{i} \oplus log_{i}$$
+    - Retrieve the Raw Measurement ($m$) and the X-Error Log ($log$) for qubits on this chain ($d0, d3, d6$).
+    - Apply correction: $m'_{i} = m_{i} \oplus log_{i}$
 - Reduction XOR (Parity Check):
     - Compute the final logical measurement bit ($M_{logical}$) by XORing the corrected bits along the chain.
-    - $$M_{logical} = m'_{0} \oplus m'_{3} \oplus m'_{6}$$
+    - $M_{logical} = m'_{0} \oplus m'_{3} \oplus m'_{6}$
 
 **Step 4: Verdict & LER**
 - **Verdict**:
     - If $M_{logical} == 0$: **Success** (State is $|0\rangle_L$).
     - If $M_{logical} == 1$: **Logical Error (Fail)**.
     - Interpretation: A **Left-Right chain of X-errors** must have crossed our vertical measurement line an odd number of times, flipping the logical parity to $|1\rangle_L$.
-- **Calculation**: $$P_{logical} \approx \frac{\text{Total Failures}}{\text{Total Experiments}}$$
+- **Calculation**: $P_{logical} \approx \frac{\text{Total Failures}}{\text{Total Experiments}}$
+
+### Q: Why the syndrome remains 0 (undetected) for these error chains?
+
+![Error_Chain](images/Error_Chain.png)
+
+A "Logical Error" occurs when a chain of physical errors spans the lattice. These chains are dangerous because they commute with the stabilizers, effectively "tricking" the detection system.
+
+**1. Logical X Error Chain ($X_L$ Error)**
+- **Scenario**: A continuous chain of physical X-errors **connects the Left and Right boundaries**.
+- **Example Path**: $X(D_6) \to X(D_7) \to X(D_8)$
+- **Why Syndrome is 0 (Undetected)**: 
+    - Z-Stabilizers (Green) are responsible for detecting X-errors by checking the parity of their neighbors.
+    - However, in this chain, every internal Z-stabilizer touches two erroneous qubits (e.g., one stabilizer touches both $D_6$ and $D_7$, another touches $D_7$ and $D_8$).
+    - Since stabilizers calculate parity ($1 \oplus 1 = 0$), two errors cancel each other out locally.
+    - Result: All Z-stabilizers report **Syndrome 0 (No Error, but actual Error)**.
+- **Consequence**: The decoder assumes the state is clean, but the logical qubit has been bit-flipped ($|0\rangle_L \to |1\rangle_L$).
+
+**2. Logical Z Error Chain ($Z_L$ Error)**
+- **Scenario**: A continuous chain of physical Z-errors **connects the Top and Bottom boundaries**.
+- **Example Path**: $Z(D_0) \to Z(D_3) \to Z(D_6)$
+- **Why Syndrome is 0 (Undetected)**:
+    - X-Stabilizers (Yellow) are responsible for detecting Z-errors.
+    - Similar to the case above, any internal X-stabilizer along this path interacts with two errors (entering and leaving the stabilizer's region).
+    - The parity check sees an even number of errors ($1 \oplus 1 = 0$).
+    - Result: All X-stabilizers report **Syndrome 0 (No Error, but actual Error)**.
+- **Consequence**: The decoder detects nothing, but the logical qubit has been phase-flipped ($|+\rangle_L \to |-\rangle_L$).
 
 
 # 5. Advanced Scalability (Brief)
