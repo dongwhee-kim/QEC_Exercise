@@ -106,11 +106,11 @@ Single-shot measurements are unreliable due to physical measurement errors. Ther
 - **Accumulation**: We repeat the QEC cycle for $d$ rounds (where $d$ is the code distance of Surface Code).
 - **Spacetime Volume**: The Host/Decoder collects the syndrome history over these $d$ rounds, creating a 3D spacetime decoding graph ($2D$ space $+ 1D$ time). **Background: $m = (d - 1)$ rounds are required to match the code's error correction capability [8].**
 - **Delayed Correction**: The Decoder solves the matching problem (MWPM) across this entire window to identify the most probable error chain.
-- **Application**: Only after the $d$ rounds are complete (or when a logical operation is required), the accumulated Pauli Frame correction is applied to the **Final Measurement** results or sent to the Host for logical state validation. 
-
+- **Application: Delayed Correction Strategy**
+    - **Rounds $1 \dots (d-1)$ (Accumulation)**: The Decoder identifies errors and updates the Pauli Frame in software. **Crucially, no corrections are applied to the qubits, and no logical data is transmitted to the Host for validation.** The system simply tracks the "virtual" error state.
+    - **Round $d$ (Final Application & Validation)**: Upon the final measurement of data qubits, the accumulated Pauli Frame correction is **applied** to the raw measurement results. Only then is the **corrected logical outcome sent to the Host** to verify if the initial state was preserved.
 
 # 4. Logical Errors & LER Calculation ($d=3$ Rotated Surface Code)
-## Figure -> A d=5 grid showing two scenarios: (A) A short, broken chain (Correctable, No Logical Error). (B) A complete chain connecting Top and Bottom (Logical Error/Failure).
 
 This section defines a **Logical Error** as a failure to preserve the encoded information after correction and details the step-by-step simulation workflow to calculate the **Logical Error Rate (LER)**.
 
@@ -127,15 +127,15 @@ Before calculating the error rate, we must distinguish between an error on a dev
 **II. Simulation Setup: The $d=3$ Lattice**
 
 To verify if the Quantum Error Correction was successful, we simulate a **Distance-3 ($d=3$)** Rotated Surface Code.
-- **Data Qubits** ($d$): 9 qubits carrying the logical information ($D_0 \dots D_8$).
+- **Data Qubits** ($d$): 9 qubits carrying the logical information ($d0 \dots d8$).
 - **Z-Stabilizers** (Green Circles): Measure the Z-parity of neighboring data qubits. Detect $X$ errors.
 - **X-Stabilizers** (Yellow Circles): Measure the X-parity of neighboring data qubits. Detect $Z$ errors.
 
 In a Rotated Surface Code, the lattice boundaries define the logical operators. For our $d=3$ setup:
 - **Logical Z Operator ($Z_L$)**: A chain of $Z$ operators connecting the **Top (Smooth) and Bottom (Smooth)** boundaries. 
-    - Path: e.g., $Z(D_0) \otimes Z(D_3) \otimes Z(D_6)$.
+    - Path: e.g., $Z(d0) \otimes Z(d3) \otimes Z(d6)$.
 - **Logical X Operator ($X_L$)**: A chain of $X$ operators connecting the **Left (Rough) and Right (Rough)** boundaries.
-    - Path: e.g., $X(D_6) \otimes X(D_7) \otimes X(D_8)$
+    - Path: e.g., $X(d6) \otimes X(d7) \otimes X(d8)$
 
 
 **III. Logical Error Rate (LER) Calculation Flow**
