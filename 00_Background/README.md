@@ -159,11 +159,16 @@ We determine the logical error probability by comparing the measured logical par
 - Bitwise XOR (Apply Correction):
     - Perform a bitwise XOR between the Raw Measurement outcome and the Error Log.
     
-    $$m'_{i} = m_{i} \oplus \text{log}_{i}$$
+    $$
+    m'_{i} = m_{i} \oplus \text{log}_{i}
+    $$
+
 - Reduction XOR (Parity Check):
     - Compute the final logical measurement bit ($M_{logical}$) by XORing the corrected bits along the chain.
 
-    $$M_{logical} = m'_{0} \oplus m'_{3} \oplus m'_{6}$$
+    $$
+    M_{logical} = m'_{0} \oplus m'_{3} \oplus m'_{6}
+    $$
 
 **Step 4: Verdict & LER**
 - **Verdict**:
@@ -203,7 +208,7 @@ A "Logical Error" occurs when a chain of physical errors spans the lattice. Thes
 ![Lattice_Surgery_Magic_State_Distillation](images/Lattice_Surgery_Magic_State_Distillation.png)
 **Source: [(PRR'2025) Resource overheads and attainable rates for trapped-ion lattice surgery](https://journals.aps.org/prresearch/abstract/10.1103/PhysRevResearch.7.023088)**
 
-To run useful algorithms, we need more than just memory; we need logic operations between logical qubits.
+To execute useful algorithms, we must bridge the gap between quantum memory and logical computation. This necessitates the use of Lattice Surgery and Magic State Distillation to complete the universal set of logic gates required for fault-tolerant quantum computing.
 
 **Lattice Surgery**: A technique to perform multi-qubit gates (like CNOT) between two separate logical surface code patches by temporarily merging their boundaries.
 
