@@ -91,21 +91,24 @@ However, maintaining this loop is a strict race against time. On the existing de
 
 # 3. Decoding Architecture: Pauli Tracking [3-5] & Time Axis
 
-## Figure -> A flow diagram: [Decoder Output] -> [FPGA Register (Pauli Frame)] -> [Next Gate Instruction Modified]. Show that the physical Qubit remains untouched. 
+![Pauli_Tracking_Time_Axis](images/Pauli_Tracking_Time_Axis.png)
 
 To satisfy the strict **1 µs latency budget**, we avoid applying physical correction pulses (e.g., applying a physical $X$ gate) inside the loop. Instead, we utilize **Pauli Tracking** and accumulate error information over time.
 
 **I.Virtual Correction (Zero Latency)**
 - **Concept**: Instead of physically "fixing" the qubit state with a microwave pulse, the Control Processor (FPGA) updates a classical software reference frame.
-- **Mechanism**: If the Decoder identifies an error (e.g., "X-error on Data Qubit $D_1$"), the system merely records this in the **Pauli Frame**.
+- **Mechanism**: If the Decoder identifies an error (e.g., "X-error on Data Qubit $d1$"), the system merely records this in the **Pauli Frame**.
 - **Benefit**: The QEC cycle proceeds immediately without the delay of pulse modulation.
 
 **II. The Time Axis: Waiting for $d$ Rounds**
 
 Single-shot measurements are unreliable due to physical measurement errors. Therefore, we do not make a final decision based on a single cycle.
 - **Accumulation**: We repeat the QEC cycle for $d$ rounds (where $d$ is the code distance of Surface Code).
-- **Spacetime Volume**: The Host/Decoder collects the syndrome history over these $d$ rounds, creating a 3D spacetime decoding graph ($2D$ space $+ 1D$ time). **Background: $m = (d - 1)$ rounds are required to match the code's error correction capability [8].**
-- **Delayed Correction**: The Decoder solves the matching problem (MWPM) across this entire window to identify the most probable error chain.
+- **Spacetime Volume**: The Host/Decoder collects the syndrome history over these $d$ rounds, creating a 3D spacetime decoding graph ($2D$ space $+ 1D$ time). **$m = (d - 1)$ rounds are required to match the code's error correction capability [8].**
+    - **Space Error**: Data qubit errors
+    - **Time Error**: Measurement errors in syndrome extraction
+    - **Space-Time Error**: Gate errors in syndrome extraction
+- **Delayed Correction**: The Decoder solves the matching problem (MWPM) utilizing **(X/Z) decoding graph** across this entire window to identify the most probable error chain.
 - **Application: Delayed Correction Strategy**
     - **Rounds $1 \dots (d-1)$ (Accumulation)**: The Decoder identifies errors and updates the Pauli Frame in software. **Crucially, no corrections are applied to the qubits, and no logical data is transmitted to the Host for validation.** The system simply tracks the "virtual" error state.
     - **Round $d$ (Final Application & Validation)**: Upon the final measurement of data qubits, the accumulated Pauli Frame correction is **applied** to the raw measurement results. Only then is the **corrected logical outcome sent to the Host** to verify if the initial state was preserved.
@@ -143,7 +146,7 @@ In a Rotated Surface Code, the lattice boundaries define the logical operators. 
 We determine the logical error probability by comparing the measured logical parity with the expected value.
 
 **Step 1: Initialization (State Preparation)** 
-- Prepare the logical qubit in $|0\rangle_L$.
+- Prepare the logical qubit in $|0\rangle_L$ (**Expected Value**).
 - Physically, all 9 Data Qubits ($d0 \dots d8$) are initialized to $|0\rangle$.
 
 **Step 2: The QEC Loop (Error Logging)**
@@ -167,7 +170,7 @@ We determine the logical error probability by comparing the measured logical par
     - Interpretation: A **Left-Right chain of X-errors** must have crossed our vertical measurement line an odd number of times, flipping the logical parity to $|1\rangle_L$.
 - **Calculation**: $P_{logical} \approx \frac{\text{Total Failures}}{\text{Total Experiments}}$
 
-### Q: Why the syndrome remains 0 (undetected) for these error chains?
+### Q: Why the syndrome remains 0 (undetected) for these error chains, connecting opposite boundaries?
 
 ![Error_Chain](images/Error_Chain.png)
 
@@ -175,17 +178,17 @@ A "Logical Error" occurs when a chain of physical errors spans the lattice. Thes
 
 **1. Logical X Error Chain ($X_L$ Error)**
 - **Scenario**: A continuous chain of physical X-errors **connects the Left and Right boundaries**.
-- **Example Path**: $X(D_6) \to X(D_7) \to X(D_8)$
+- **Example Path**: $X(d6) \to X(d7) \to X(d8)$
 - **Why Syndrome is 0 (Undetected)**: 
     - Z-Stabilizers (Green) are responsible for detecting X-errors by checking the parity of their neighbors.
-    - However, in this chain, every internal Z-stabilizer touches two erroneous qubits (e.g., one stabilizer touches both $D_6$ and $D_7$, another touches $D_7$ and $D_8$).
+    - However, in this chain, every internal Z-stabilizer touches two erroneous qubits (e.g., one stabilizer touches both $d6$ and $d7$, another touches $d7$ and $d8$).
     - Since stabilizers calculate parity ($1 \oplus 1 = 0$), two errors cancel each other out locally.
     - Result: All Z-stabilizers report **Syndrome 0 (No Error, but actual Error)**.
 - **Consequence**: The decoder assumes the state is clean, but the logical qubit has been bit-flipped ($|0\rangle_L \to |1\rangle_L$).
 
 **2. Logical Z Error Chain ($Z_L$ Error)**
 - **Scenario**: A continuous chain of physical Z-errors **connects the Top and Bottom boundaries**.
-- **Example Path**: $Z(D_0) \to Z(D_3) \to Z(D_6)$
+- **Example Path**: $Z(d0) \to Z(d3) \to Z(d6)$
 - **Why Syndrome is 0 (Undetected)**:
     - X-Stabilizers (Yellow) are responsible for detecting Z-errors.
     - Similar to the case above, any internal X-stabilizer along this path interacts with two errors (entering and leaving the stabilizer's region).
@@ -194,8 +197,9 @@ A "Logical Error" occurs when a chain of physical errors spans the lattice. Thes
 - **Consequence**: The decoder detects nothing, but the logical qubit has been phase-flipped ($|+\rangle_L \to |-\rangle_L$).
 
 
-# 5. Advanced Scalability (Brief)
-## Figure -> Two separate Surface Code patches merging into one larger patch to perform a logical CNOT operation.
+# 5. Advanced Topics
+![Lattice_Surgery_Magic_State_Distillation](images/Lattice_Surgery_Magic_State_Distillation.png)
+**Source: [(PRR'2025) Resource overheads and attainable rates for trapped-ion lattice surgery](https://journals.aps.org/prresearch/abstract/10.1103/PhysRevResearch.7.023088)**
 
 To run useful algorithms, we need more than just memory; we need logic operations between logical qubits.
 
