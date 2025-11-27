@@ -157,11 +157,11 @@ We determine the logical error probability by comparing the measured logical par
 **Step 3: Logical Measurement Computation** To check if the state is still $|0\rangle_L$, we measure the Logical Z Operator ($Z_L$).
 - Select Logical Chain: The $Z_L$ operator corresponds to the column $d0 - d3 - d6$ (connecting Top-Bottom).
 - Bitwise XOR (Apply Correction):
-    - Retrieve the Raw Measurement ($m$) and the X-Error Log ($log$) for qubits on this chain ($d0, d3, d6$).
-    - Apply correction: $m'_{i} = m_{i} \oplus log_{i}$
+    - Perform a bitwise XOR between the Raw Measurement outcome and the Error Log.
+    - $$m'_{i} = m_{i} \oplus \text{log}_{i}$$
 - Reduction XOR (Parity Check):
     - Compute the final logical measurement bit ($M_{logical}$) by XORing the corrected bits along the chain.
-    - $M_{logical} = m'_{0} \oplus m'_{3} \oplus m'_{6}$
+    - $$M_{logical} = m'_{0} \oplus m'_{3} \oplus m'_{6}$$
 
 **Step 4: Verdict & LER**
 - **Verdict**:
