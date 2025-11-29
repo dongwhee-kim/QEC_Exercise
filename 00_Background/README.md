@@ -56,7 +56,7 @@ This document outlines the fundamental architecture and timing constraints of re
 - More complex but necessary for fault-tolerant quantum computing.
 - E.g., Shor Code, Surface Code, QLDPC Code
 
-# 2. FTQC Overview & Time Constraints
+# 2. QEC Overview & Time Constraints
 
 ![FTQC_Overview](images/FTQC_Overview.png)
 
@@ -126,7 +126,7 @@ Before calculating the error rate, we must distinguish between an error on a dev
     - **Logical X Error ($X_L$ Error)**: A chain of physical X-errors connecting the **Left $\leftrightarrow$ Right** boundaries. Effect: Flips the Z-basis logical state ($|0\rangle_L \leftrightarrow |1\rangle_L$).
     - **Logical Z Error ($Z_L$ Error)**: A chain of physical Z-errors connecting the **Top $\leftrightarrow$ Bottom** boundaries. Effect: Flips the X-basis logical state ($|+\rangle_L \leftrightarrow |-\rangle_L$).
 
-![Rotated_Surface_Code](images/Rotated_Surface_Code.png)
+<img src="images/Rotated_Surface_Code.png" alt="Rotated_Surface_Code" width="50%">
 
 **II. Simulation Setup: The $d=3$ Lattice**
 
