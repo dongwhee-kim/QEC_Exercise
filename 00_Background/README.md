@@ -110,8 +110,9 @@ Single-shot measurements are unreliable due to physical measurement errors. Ther
     - **Space-Time Error**: Gate errors in syndrome extraction
 - **Delayed Correction**: The Decoder solves the matching problem (MWPM) utilizing **(X/Z) decoding graph** across this entire window to identify the most probable error chain.
 - **Application: Delayed Correction Strategy**
-    - **Rounds $1 \dots (d-1)$ (Accumulation)**: The Decoder identifies errors and updates the Pauli Frame in software. **Crucially, no corrections are applied to the qubits, and no logical data is transmitted to the Host for validation.** The system simply tracks the "virtual" error state.
-    - **Round $d$ (Final Application & Validation)**: Upon the final measurement of data qubits, the accumulated Pauli Frame correction is **applied** to the raw measurement results. Only then is the **corrected logical outcome sent to the Host** to verify if the initial state was preserved.
+    - **Rounds $1 \dots (d-1)$ (Accumulation)**: The Decoder continuously identifies errors and updates the **Pauli Frame** in software. Crucially, **no physical corrections** are applied to the qubits, and no logical verdict is made during these intermediate rounds. The system simply tracks the "virtual" error state in the background.
+    - **Round $d$ (Final Application & Validation)**: Upon the final measurement of the data qubits, the **accumulated Pauli Frame** is applied to the raw measurement results. Only at this stage is the **corrected logical outcome** computed and sent to the Host to verify if the initial state was preserved.
+- **Summary**: While syndrome data is sent to the Host **every round** to build the full spacetime syndrome history, the Decoder typically performs the computationally intensive matching and determines the final correction **only after accumulating $d$ rounds of data**.
 
 # 4. Logical Errors & LER Calculation ($d=3$ Rotated Surface Code)
 
