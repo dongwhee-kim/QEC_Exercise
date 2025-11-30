@@ -165,22 +165,18 @@ We determine the logical error probability by comparing the measured logical par
 
 **Step 3: Logical Measurement Computation** To check if the state is still $|0\rangle_L$, we measure the Logical Z Operator ($Z_L$).
 - Select Logical Chain: The $Z_L$ operator corresponds to the column $d0 - d3 - d6$ (connecting Top-Bottom).
-- Bitwise XOR (Apply Correction):
-    - Perform a bitwise XOR between the Raw Measurement outcome and the Error Log.
-    <br>
-    $m'_{i} = m_{i} \oplus \text{log}_{i}$
+- Bitwise XOR (Apply Correction): $m'_{i}$ = $m_{i}$ $\oplus$ $\text{log}_{i}$
+    - Perform a bitwise XOR between the Raw Data Measurement outcome ($m_{i}$) and the Error Log ($\text{log}_{i}$).
 
-- Reduction XOR (Parity Check):
+- Reduction XOR (Parity Check): $M_{logical}$ = $m'_{0}$ $\oplus$ $m'_{3}$ $\oplus$ $m'_{6}$
     - Compute the final logical measurement bit ($M_{logical}$) by XORing the corrected bits along the chain.
-    <br>
-    $m'_{0} \oplus m'_{3} \oplus m'_{6}$
 
-**Step 4: Verdict & LER**
-- **Verdict**:
-    - If $M_{logical} == 0$: **Success** (State is $|0\rangle_L$).
+**Step 4: Veerification & LER**
+- **Verification**:
+    - If $M_{logical} == 0$: **Success** (Initial State is $|0\rangle_L$).
     - If $M_{logical} == 1$: **Logical Error (Fail)**.
     - Interpretation: A **Left-Right chain of X-errors** must have crossed our vertical measurement line an odd number of times, flipping the logical parity to $|1\rangle_L$.
-- **Calculation**: $P_{logical} \approx \frac{\text{Total Failures}}{\text{Total Experiments}}$
+- **LER Calculation**: $P_{logical} \approx \frac{\text{Total Failures}}{\text{Total Experiments}}$
 
 ### Q: Why the syndrome remains 0 (undetected) for these error chains, connecting opposite boundaries?
 
