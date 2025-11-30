@@ -97,7 +97,7 @@ However, maintaining this loop is a strict race against time. On the existing de
 
 # 3. Decoding Architecture: Pauli Tracking [3-5] & Time Axis
 
-![Pauli_Tracking_Decoding_Graph](images/Pauli_Tracking_Decoding_Graph.png)
+![Pauli_Tracking](images/Pauli_Tracking.png)
 
 To satisfy the strict **1 µs latency budget**, we avoid applying physical correction pulses (e.g., applying a physical $X$ gate) inside the loop. Instead, we utilize **Pauli Tracking** and accumulate error information over time.
 
