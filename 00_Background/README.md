@@ -4,6 +4,8 @@ This document outlines the fundamental architecture and timing constraints of re
 
 **Specifically focusing on superconducting (IBM, Google) qubit systems.**
 
+Note: It is recommended to study the basics through standard textbooks or coursework before proceeding.
+
 # 1. What is QEC? Why is it needed?
 
 ![Qubits_Are_Noisy](images/Qubits_Are_Noisy.png)
@@ -58,7 +60,7 @@ This document outlines the fundamental architecture and timing constraints of re
 
 # 2. QEC Overview & Time Constraints
 
-![FTQC_Overview](images/FTQC_Overview.png)
+![QEC_Overview](images/QEC_Overview.png)
 
 ![Z_X_Stabilizer_Circuit](images/Z_X_Stabilizer_Circuit.png)
 
@@ -66,12 +68,14 @@ This document outlines the fundamental architecture and timing constraints of re
 
 In superconducting systems, Quantum Error Correction (QEC) relies on parity qubits to periodically extract information from data qubits via Z- or X-type stabilizer circuits (Surface Code has **degree-4**, four data qubits mapped to one parity qubit). This process, known as **syndrome extraction**, projects continuous errors into discrete Pauli errors. These cycles repeat from initialization until the data qubits are measured (called logical measurement), with each iteration termed a QEC cycle (or round). And the measurement outcome of the parity qubits is called a **syndrome**.
 
-However, maintaining this loop is a strict race against time. On the existing device technology (Google Sycamore), the syndrome extraction circuit completes in approximately **1 µs** **[1, 2]**. This imposes a hard time constraint: if the decoding software takes longer than this hardware cycle, errors accumulate in a 'backlog,' eventually causing system failure. Consequently, designing accurate, real-time decoders is a critical area of research.
+However, maintaining this loop is a strict race against time. On the existing device technology (Google Sycamore), the syndrome extraction circuit completes in approximately **1 µs** **[1, 2]**. This imposes a hard time constraint: if the decoding software cannot keep up with the data generation rate (throughput), the backlog grows indefinitely, causing buffer overflow. Consequently, designing accurate, real-time decoders is a critical area of research.
+
+**Note: MWPM decoding latency is permitted to exceed 1 µs. In fact, Google's paper reported an average decoding latency of 63 µs at distance-5, sustained for up to a million cycles [9].**
 
 ### Summary: Cycle Definitions & Hardware Mapping
 - **Stabilizer Circuit Execution (Steps ❶  $\rightarrow$ ❻)**: Physically executing gates and measurements.
 - **QEC Cycle / Round (Physical Loop) (Steps ❶  $\rightarrow$ ❻)**: The hardware loop that repeats every cycle.
-- **Total Latency Budget (Steps ❶  $\rightarrow$ ❽)**: The entire closed-loop latency must be **< 1 µs** to correct errors to prevent accumulated errors.
+- **Hardware Cycle Budget (Steps 1 $\to$ 7): < 1 µs**: The entire closed-loop latency must be **< 1 µs** to correct errors to prevent accumulated errors. Step ❽ occurs only at round 'd' or when strictly necessary (e.g., executing T-gates).
 
 **Detailed Description: The 1 µs QEC Feedback Loop**
 
@@ -85,9 +89,11 @@ However, maintaining this loop is a strict race against time. On the existing de
 - Step ❺. A/D Conversion: ADCs digitize the incoming RF signals for processing.
 - Step ❻. State Discrimination (Syndrome Extraction): The FPGA performs real-time demodulation and integration on the raw data. **Outcome**: It determines the qubit states (0 or 1) and generates the syndrome.
 
-**III. Feedback Path (Logical Layer): Calculating and applying corrections. (Time Budget: ~200 ns – 400 ns)**
-- Step ❼. Syndrome Transmission: The extracted syndrome bits (e.g., 01...10) are transmitted from the FPGA to the Host (with Decoder) via a low-latency interface (e.g., PCIe) within tens of ns.
-- Step ❽. Correction (Pauli Frame Update): The Decoder calculates the error location (using **MWPM** or **Union-Find**) and sends correction instructions back to the FPGA. To minimize latency, the Control Processor typically updates the Pauli Frame (virtual software correction) for the next round instead of applying physical gates **[4, 5]**. **Correction Information - 2 bits per data qubit (00 [No Error], 01 [X Error], 10 [Z Error], 11 [Y Error])**
+**III. Feedback Path (Logical Layer): Calculating and applying corrections. This step occurs in parallel or is deferred**
+- Step ❼. Syndrome Transmission (Included in 1us Loop): The extracted syndrome bits (e.g., 01...10) are **transmitted immediately** from the FPGA to the Host (Decoder) via a low-latency interface (e.g., PCIe) **every round**.
+- Step ❽. Correction (Pauli Frame Update) (Virtual/Deferred): The Decoder calculates error locations. Instead of sending physical correction commands every round (which causes latency), the Decoder **internally updates the Pauli Frame** (software tracking). **[4, 5]**. 
+    - **Correction Data Format**: The error state for **each data qubit** is maintained as a **2-bit code**: 00 (No Error), 01 (X Error), 10 (Z Error), or 11 (Y Error).
+    - **Deferred Transmission**: Crucially, this correction data is **NOT transmitted to the FPGA every round**. It accumulates in the software Pauli Frame and is sent only when strictly necessary—typically at **Round $d$** for the final logical measurement or before executing non-Clifford gates (e.g., T-gates).
 
 # 3. Decoding Architecture: Pauli Tracking [3-5] & Time Axis
 
@@ -110,9 +116,9 @@ Single-shot measurements are unreliable due to physical measurement errors. Ther
     - **Space-Time Error**: Gate errors in syndrome extraction
 - **Delayed Correction**: The Decoder solves the matching problem (MWPM) utilizing **(X/Z) decoding graph** across this entire window to identify the most probable error chain.
 - **Application: Delayed Correction Strategy**
-    - **Rounds $1 \dots (d-1)$ (Accumulation)**: The Decoder continuously identifies errors and updates the **Pauli Frame** in software. Crucially, **no physical corrections** are applied to the qubits, and no logical verdict is made during these intermediate rounds. The system simply tracks the "virtual" error state in the background.
-    - **Round $d$ (Final Application & Validation)**: Upon the final measurement of the data qubits, the **accumulated Pauli Frame** is applied to the raw measurement results. Only at this stage is the **corrected logical outcome** computed and sent to the Host to verify if the initial state was preserved.
-- **Summary**: While syndrome data is sent to the Host **every round** to build the full spacetime syndrome history, the Decoder typically performs the computationally intensive matching and determines the final correction **only after accumulating $d$ rounds of data**.
+    - **Rounds $1 \dots (d-1)$ (Accumulation)**: The syndrome data is streamed to the Host (Step ❼) every round. The Decoder identifies errors and updates the **Pauli Frame** in software. **Crucially, Step ❽ (Physical Feedback) does NOT occur during these rounds.** No physical corrections are applied to the qubits, and the FPGA proceeds to the next round immediately. 
+    - **Round $d$ (Final Application & Validation)**: Upon the final measurement of the data qubits, the **accumulated Pauli Frame** is applied to the raw measurement results. **Only at this stage is Step ❽ effectively realized** (as a software correction on the final data) to compute the corrected logical outcome and verify if the initial state was preserved.
+- **Summary**: While syndrome data is sent to the Host every round (Step ❼) to build the full spacetime syndrome history, the Decoder determines the final correction (Step ❽) only after accumulating $d$ rounds of data.
 
 # 4. Logical Errors & LER Calculation ($d=3$ Rotated Surface Code)
 
@@ -231,3 +237,4 @@ To execute useful algorithms, we must bridge the gap between quantum memory and 
 
 **[8]** Stephens, Ashley M. "Fault-tolerant thresholds for quantum error correction with the surface code." Physical Review A 89.2 (2014): 022321.
 
+**[9]** "Quantum error correction below the surface code threshold." Nature 638, no. 8052 (2025): 920-926.
