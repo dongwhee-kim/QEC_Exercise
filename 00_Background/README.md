@@ -70,7 +70,7 @@ In superconducting systems, Quantum Error Correction (QEC) relies on parity qubi
 
 However, maintaining this loop is a strict race against time. On the existing device technology (Google Sycamore), the syndrome extraction circuit completes in approximately **1 µs** **[1, 2]**. This imposes a hard time constraint: if the decoding software cannot keep up with the data generation rate (throughput), the backlog grows indefinitely, causing buffer overflow. Consequently, designing accurate, real-time decoders is a critical area of research.
 
-**Note: MWPM decoding latency is permitted to exceed 1 µs. In fact, Google's paper reported an average decoding latency of 63 µs at distance-5, sustained for up to a million cycles using software-based parallel processing [9].**
+**Note: Current Software-based MWPM decoding latency exceeds 1 µs. In fact, Google's paper reported an average decoding latency of 63 µs at distance-5, sustained for up to a million cycles using software-based parallel processing [9].**
 
 ### Summary: Cycle Definitions & Hardware Mapping
 - **Stabilizer Circuit Execution (Steps ❶  $\rightarrow$ ❻)**: Physically executing gates and measurements.
