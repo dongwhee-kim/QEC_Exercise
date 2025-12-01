@@ -14,9 +14,9 @@ Note: It is recommended to study the basics through standard textbooks or course
 **Key Challenges in Quantum Computing** - Quantum states are inherently **fragile**, suffering from information loss due to environmental **decoherence** and **computational errors** stemming from sources such as imperfect gate operations and measurements.
 
 **Quantum Error Characterization**
-- **Gate Error**: A deviation from the ideal quantum gate operation, causing incorrect quantum states due to noise or other imperfections. Error-rates typically in the range of **0.1-1%**.
+- **Gate Error**: A deviation from the ideal quantum gate operation, causing incorrect quantum states due to noise or other imperfections. Error-rates typically in the range of **0.006-0.0064% (Single-qubit gate) and 0.15-0.51% (Two-qubit gate [CZ]) [13]**.
 - **Decoherence Error**: Occurs when a quantum system interacts with its environment, causing the loss of quantum information stored in superposition or entanglement. It is typically characterized by two time constants, **$T_1$ (Relaxation)** and **$T_2$ (Dephasing)** times.
-- **Measurement Error**: The discrepancy between the actual quantum state and the classical outcome obtained after measurement. This includes errors from state projection failure or detector inefficiencies. State $$|1\rangle$$ more prone to errors than state $$|0\rangle$$. Error-rates typically in the range of **1-4%**.
+- **Measurement Error**: The discrepancy between the actual quantum state and the classical outcome obtained after measurement. This includes errors from state projection failure or detector inefficiencies. State $$|1\rangle$$ more prone to errors than state $$|0\rangle$$ **[2]**. Error-rates typically in the range of **0.56-0.98% [13]**.
 - **Correlated Error**: Errors that affect multiple qubits simultaneously or where an error on one qubit is dependent on the state or operation of another. These errors violate the standard assumption that errors occur independently.
 
     1) **Spectator Error**: Errors induced on a qubit (the spectator) that is not currently being operated on, often caused by the interaction with neighboring qubits undergoing gate operations.
@@ -68,7 +68,7 @@ Note: It is recommended to study the basics through standard textbooks or course
 
 In superconducting systems, Quantum Error Correction (QEC) relies on parity qubits to periodically extract information from data qubits via Z- or X-type stabilizer circuits (Surface Code has **degree-4**, four data qubits mapped to one parity qubit). This process, known as **syndrome extraction**, projects continuous errors into discrete Pauli errors. These cycles repeat from initialization until the data qubits are measured (called logical measurement), with each iteration termed a QEC cycle (or round). And the measurement outcome of the parity qubits is called a **syndrome**.
 
-However, maintaining this loop is a strict race against time. On the existing device technology (Google Sycamore), the syndrome extraction circuit completes in approximately **1 µs** **[1, 2]**. This imposes a hard time constraint: if the decoding software cannot keep up with the data generation rate (throughput), the backlog grows indefinitely, causing buffer overflow. Consequently, designing accurate, real-time decoders is a critical area of research.
+However, maintaining this loop is a strict race against time. On the existing device technology (Google Sycamore), the syndrome extraction circuit completes in approximately **1 µs** **[1, 2]** (**[13] completes in 1.1us**). This imposes a hard time constraint: if the decoding software cannot keep up with the data generation rate (throughput), the backlog grows indefinitely, causing buffer overflow. Consequently, designing accurate, real-time decoders is a critical area of research.
 
 **Note: Current Software-based MWPM decoding latency exceeds 1 µs. In fact, Google's paper reported an average decoding latency of 63 µs at distance-5, sustained for up to a million cycles using software-based parallel processing [9].**
 
@@ -250,3 +250,5 @@ To execute useful algorithms, we must bridge the gap between quantum memory and 
 **[11]** Vittal, Suhas, Poulami Das, and Moinuddin Qureshi. "Astrea: Accurate quantum error-decoding via practical minimum-weight perfect-matching." Proceedings of the 50th Annual International Symposium on Computer Architecture. 2023.
 
 **[12]** Alavisamani, Narges, et al. "Promatch: Extending the Reach of Real-Time Quantum Error Correction with Adaptive Predecoding." Proceedings of the 29th ACM International Conference on Architectural Support for Programming Languages and Operating Systems, Volume 3. 2024.
+
+**[13]** Google Quantum AI, “Willow Spec Sheet,” Dec. 9, 2024. [Online]. Available: https://quantumai.google/static/site-assets/downloads/willow-spec-sheet.pdf.

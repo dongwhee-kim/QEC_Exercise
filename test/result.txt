@@ -1,0 +1,27 @@
+--- Surface Code Monte Carlo Test (d=3) ---
+Using 3 syndrome rounds.
+--- Error Model (Probabilities) ---
+Data X-Error (p_data_x):   0.001 (Weight: 6.908)
+Data Z-Error (p_data_z):   0.001 (Weight: 6.908)
+Z-Meas Error (p_meas_z):  0.01 (Weight: 4.605)
+X-Meas Error (p_meas_x):  0.01 (Weight: 4.605)
+
+--- Test Correction Capabiliy (Single Error Injection) ---
+Running 100 trials for single error correction capability.
+
+--- Final Correction Report (Single Error Test) ---
+Total Trials: 100
+Results: {'NE': 16, 'CE': 55, 'UE': 29}
+Success Rate (NE + CE): 71.00%
+Failure Rate (UE): 29.00%
+
+--- Test Logical Error Rate (LER) (d=3) ---
+Running 100 trials with probabilistic errors.
+Using 3 syndrome rounds.
+
+--- LER Test Final Report ---
+Total Trials: 100
+Results: {'NE': 0, 'CE': 90, 'UE': 10}
+Logical Error Rate (LER) (UE / Trials): 0.100000
+Success Rate (NE + CE): 90.00%
+Failure Rate (UE): 10.00%
