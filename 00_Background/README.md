@@ -70,7 +70,7 @@ In superconducting systems, Quantum Error Correction (QEC) relies on parity qubi
 
 However, maintaining this loop is a strict race against time. On the existing device technology (Google Sycamore), the syndrome extraction circuit completes in approximately **1 µs** **[1, 2]**. This imposes a hard time constraint: if the decoding software cannot keep up with the data generation rate (throughput), the backlog grows indefinitely, causing buffer overflow. Consequently, designing accurate, real-time decoders is a critical area of research.
 
-**Note: MWPM decoding latency is permitted to exceed 1 µs. In fact, Google's paper reported an average decoding latency of 63 µs at distance-5, sustained for up to a million cycles [9].**
+**Note: MWPM decoding latency is permitted to exceed 1 µs. In fact, Google's paper reported an average decoding latency of 63 µs at distance-5, sustained for up to a million cycles using software-based parallel processing [9].**
 
 ### Summary: Cycle Definitions & Hardware Mapping
 - **Stabilizer Circuit Execution (Steps ❶  $\rightarrow$ ❻)**: Physically executing gates and measurements.
@@ -120,7 +120,17 @@ Single-shot measurements are unreliable due to physical measurement errors. Ther
     - **Round $d$ (Final Application & Validation)**: Upon the final measurement of the data qubits, the **accumulated Pauli Frame** is applied to the raw measurement results. **Only at this stage is Step ❽ effectively realized** (as a software correction on the final data) to compute the corrected logical outcome and verify if the initial state was preserved.
 - **Summary**: While syndrome data is sent to the Host every round (Step ❼) to build the full spacetime syndrome history, the Decoder determines the final correction (Step ❽) only after accumulating $d$ rounds of data.
 
-# 4. Logical Errors & LER Calculation ($d=3$ Rotated Surface Code)
+# 4. A Study on Real-time Decoding
+
+**Decoding Approaches: Offline vs. Real-Time**
+- **Offline Decoding**: All syndrome data is recorded during the experiment and decoded after completion (e.g., using high-accuracy neural networks). There is no strict time limit.
+- **Real-Time Decoding (Online)**: Errors must be identified and tracked (via Pauli Frame) during the experiment to prevent data backlog and enable adaptive operations.
+    - **Status**: Google recently demonstrated real-time decoding capable of sustaining 1 million cycles **[9]**. While they successfully matched the throughput using parallel processing, the **average latency was 63 µs (d=5)** (significantly longer than the 1 µs cycle).
+    - **Challenge**: This high latency (avg. 63us) limits the speed of reaction-based logical operations (e.g., non-Clifford gates).
+    - **Related Research**: To bridge the gap between cycle time (1 µs) and decoding latency (e.g., avg. 63us at d=5), some research focuses on hardware-accelerated decoders (FPGAs/ASICs) that aim for low decoding latency (<1us) **[10-12]**.
+ 
+
+# 5. Logical Errors & LER Calculation ($d=3$ Rotated Surface Code)
 
 This section defines a **Logical Error** as a failure to preserve the encoded information after correction and details the step-by-step simulation workflow to calculate the **Logical Error Rate (LER)**.
 
@@ -171,7 +181,7 @@ We determine the logical error probability by comparing the measured logical par
 - Reduction XOR (Parity Check): $M_{logical}$ = $M_{0}$ $\oplus$ $M_{3}$ $\oplus$ $M_{6}$
     - Compute the final logical measurement bit ($M_{logical}$) by XORing the corrected bits along the chain.
 
-**Step 4: Veerification & LER**
+**Step 4: Verification & LER**
 - **Verification**:
     - If $M_{logical} == 0$: **Success** (Initial State is $|0\rangle_L$).
     - If $M_{logical} == 1$: **Logical Error (Fail)**.
@@ -205,7 +215,7 @@ A "Logical Error" occurs when a chain of physical errors spans the lattice. Thes
 - **Consequence**: The decoder detects nothing, but the logical qubit has been phase-flipped ($|+\rangle_L \to |-\rangle_L$).
 
 
-# 5. Advanced Topics
+# 6. Advanced Topics
 ![Lattice_Surgery_Magic_State_Distillation](images/Lattice_Surgery_Magic_State_Distillation.png)
 **Source: [(PRR'2025) Resource overheads and attainable rates for trapped-ion lattice surgery](https://journals.aps.org/prresearch/abstract/10.1103/PhysRevResearch.7.023088)**
 
@@ -234,3 +244,9 @@ To execute useful algorithms, we must bridge the gap between quantum memory and 
 **[8]** Stephens, Ashley M. "Fault-tolerant thresholds for quantum error correction with the surface code." Physical Review A 89.2 (2014): 022321.
 
 **[9]** "Quantum error correction below the surface code threshold." Nature 638, no. 8052 (2025): 920-926.
+
+**[10]** Das, Poulami, Aditya Locharla, and Cody Jones. "Lilliput: a lightweight low-latency lookup-table decoder for near-term quantum error correction." Proceedings of the 27th ACM International Conference on Architectural Support for Programming Languages and Operating Systems. 2022.
+
+**[11]** Vittal, Suhas, Poulami Das, and Moinuddin Qureshi. "Astrea: Accurate quantum error-decoding via practical minimum-weight perfect-matching." Proceedings of the 50th Annual International Symposium on Computer Architecture. 2023.
+
+**[12]** Alavisamani, Narges, et al. "Promatch: Extending the Reach of Real-Time Quantum Error Correction with Adaptive Predecoding." Proceedings of the 29th ACM International Conference on Architectural Support for Programming Languages and Operating Systems, Volume 3. 2024.
