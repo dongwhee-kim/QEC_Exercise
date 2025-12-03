@@ -93,7 +93,7 @@ However, maintaining this loop is a strict race against time. On the existing de
 - Step ❼. Syndrome Transmission (Included in 1us Loop): The extracted syndrome bits (e.g., 01...10) are **transmitted immediately** from the FPGA to the Host (Decoder) via a low-latency interface (e.g., PCIe) **every round**.
 - Step ❽. Correction (Pauli Frame Update) (Virtual/Deferred): The Decoder calculates error locations. Instead of sending physical correction commands every round (which causes latency), the Decoder **internally updates the Pauli Frame** (software tracking). **[4, 5]**. 
     - **Correction Data Format**: The error state for **each data qubit** is maintained as a **2-bit code**: 00 (No Error), 01 (X Error), 10 (Z Error), or 11 (Y Error).
-    - **Deferred Transmission**: Crucially, this correction data is **NOT transmitted to the FPGA every round**. It accumulates in the software Pauli Frame and is sent only when strictly necessary—typically at **Round $d$** for the final logical measurement or before executing non-Clifford gates (e.g., T-gates).
+    - **Deferred Transmission**: Crucially, this correction data is **NOT transmitted to the FPGA every round**. It accumulates in the software Pauli Frame and is sent only when strictly necessary—before executing non-Clifford gates (e.g., T-gates).
 
 # 3. Decoding Architecture: Pauli Tracking [3-5] & Time Axis
 
@@ -108,7 +108,7 @@ To satisfy the strict **1 µs latency budget**, we avoid applying physical corre
 
 **II. The Time Axis: Waiting for $d$ Rounds**
 
-Single-shot measurements are unreliable due to physical measurement errors. Therefore, we do not make a final decision based on a single cycle.
+Single-shot measurements are unreliable due to physical measurement errors. Therefore, we do not make a final decision based on a single cycle. We make a final decision based on a single **logical cycle**.
 - **Accumulation**: We repeat the QEC cycle for $d$ rounds (where $d$ is the code distance of Surface Code).
 - **Spacetime Volume**: The Host/Decoder collects the syndrome history over these $d$ rounds, creating a 3D spacetime decoding graph ($2D$ space $+ 1D$ time). **$m = (d - 1)$ rounds are required to match the code's error correction capability [8].**
     - **Space Error**: Data qubit errors
@@ -117,8 +117,11 @@ Single-shot measurements are unreliable due to physical measurement errors. Ther
 - **Delayed Correction**: The Decoder solves the matching problem (MWPM) utilizing **(X/Z) decoding graph** across this entire window to identify the most probable error chain.
 - **Application: Delayed Correction Strategy**
     - **Rounds $1 \dots (d-1)$ (Accumulation)**: The syndrome data is streamed to the Host (Step ❼) every round. The Decoder identifies errors and updates the **Pauli Frame** in software. **Crucially, Step ❽ (Physical Feedback) does NOT occur during these rounds.** No physical corrections are applied to the qubits, and the FPGA proceeds to the next round immediately. 
-    - **Round $d$ (Final Application & Validation)**: Upon the final measurement of the data qubits, the **accumulated Pauli Frame** is applied to the raw measurement results. **Only at this stage is Step ❽ effectively realized** (as a software correction on the final data) to compute the corrected logical outcome and verify if the initial state was preserved.
-- **Summary**: While syndrome data is sent to the Host every round (Step ❼) to build the full spacetime syndrome history, the Decoder determines the final correction (Step ❽) only after accumulating $d$ rounds of data.
+    - **Round $d$ (Accumulation (Pauli-Tracking) 'or' Real Correction on Physical Data Qubits before Executing non-Clifford Gates (e.g., T-gates))**: Upon the final measurement of the data qubits, the **accumulated Pauli Frame** is applied to the raw measurement results. **Only at this stage is Step ❽ effectively realized**-physical corrections are applied to the data qubits only before executing non-Clifford gates.
+
+![Pauli_Tracking_Timeline](images/Pauli_Tracking_Timeline.png)
+
+- **Summary**: While syndrome data is sent to the Host every round (Step ❼) to build the full spacetime syndrome history, the Decoder determines the final correction (Step ❽) only after accumulating $d$ rounds of data. **Final correction has two cases (Pauli Tracking (Clifford Gates) 'or' Real Correction on Physical Data Qubits (before non-Clifford Gates))**
 
 # 4. A Study on Real-time Decoding
 
