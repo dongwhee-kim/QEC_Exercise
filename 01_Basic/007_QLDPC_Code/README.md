@@ -15,6 +15,7 @@
 - **Shots**: ????
 - **# of data qubits**: ???
 - **# of ancilla qubits**: ???
+- **# of logical qubits (surface code is only one)**:
 
 # Getting Started
 - $ python main.py
