@@ -1,17 +1,20 @@
 # QLDPC Code ([[144, 12, 12]] BB Code)
 
 # Objective
-- Understand the **Quantum Low-Density Parity Check (QLDPC) Code**, which requires a fewer physical qubits than Surface Code.
+- Understand the **Quantum Low-Density Parity Check (QLDPC) Code**, which requires a **fewer physical qubits** than Surface Code.
 - Perform **Monte-Carlo Simulation**: Analyze the **threshold** by plotting the **Logical Error Rate (LER)** against the **Physical Error Rate (p)**.
+- Compare the LER and the num of physical qubits against surface code.
 
 # Overview
-1) BB Code
 ![BB_Code](images/BB_Code.png)
 
 # Configuration
 - **QEC Code**: [[144, 12, 12]] Bivariate Bicycle (BB) Code **[5]** (Gross Code)
 - **Decoder**: BP-OSD **[3]**
-- **Shots**: ???
+- **Error Correction Capability**: ??? 6 qubit error 100% correction??
+- **Shots**: ????
+- **# of data qubits**: ???
+- **# of ancilla qubits**: ???
 
 # Getting Started
 - $ python main.py
