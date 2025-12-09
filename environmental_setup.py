@@ -8,6 +8,7 @@ PYTHON_VERSION = "3.12"
 
 # 2. List of packages to install
 PACKAGES = [
+    "numpy<2.0",
     "qiskit",
     "matplotlib",
     "pylatexenc",
@@ -17,7 +18,9 @@ PACKAGES = [
     "tqdm",
     "pymatching",
     "rustworkx",
-    "networkx"
+    "networkx",
+    "stim",
+    "sinter"
 ]
 
 # --------------------------
