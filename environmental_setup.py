@@ -13,14 +13,16 @@ PACKAGES = [
     "matplotlib",
     "pylatexenc",
     "qiskit-aer",
-    "numpy",
+    "scipy",
     "qiskit-ibm-runtime", 
     "tqdm",
     "pymatching",
     "rustworkx",
     "networkx",
     "stim",
-    "sinter"
+    "sinter",
+    "ldpc",
+    "bposd"
 ]
 
 # --------------------------
