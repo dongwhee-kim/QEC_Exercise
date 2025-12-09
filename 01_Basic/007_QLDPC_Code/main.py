@@ -1,306 +1,375 @@
-import numpy as np
-from scipy.sparse import csr_matrix, eye, hstack, kron
-from bposd.css import css_code
-from ldpc import bposd_decoder
 import stim
-import sinter
+import pymatching
+import numpy as np
 import matplotlib.pyplot as plt
-import time
+from ldpc import bposd_decoder, mod2
+from scipy.sparse import csc_matrix, issparse
 import multiprocessing
-import networkx as nx
-import warnings
-from typing import List
-
-# 경고 무시
-warnings.filterwarnings("ignore")
+from dataclasses import dataclass
+import random
 
 # ==============================================================================
-# 1. Gross Code [[144, 12, 12]] Implementation
+# 1. Robust Gross Code Generator (Random Search)
 # ==============================================================================
-class GrossCode144:
-    def __init__(self):
-        self.L_dim = 12
-        self.M_dim = 6
-        self.N = 2 * self.L_dim * self.M_dim # 144
-        self.hx, self.hz = self._construct_matrices()
-        self.css = css_code(self.hx, self.hz)
-        self.lx = self.css.lx
-        self.lz = self.css.lz
+def get_circulant(L, shifts):
+    """L x L 순환 행렬 생성"""
+    mat = np.zeros((L, L), dtype=int)
+    for i in range(L):
+        for s in shifts:
+            mat[i, (i + s) % L] = 1
+    return mat
+
+def generate_valid_gross_code():
+    """
+    논리 큐비트(k > 0)가 존재하는 Gross Code가 나올 때까지
+    Shift 파라미터를 랜덤 변경하며 탐색합니다.
+    """
+    L = 72  # n = 144
+    attempts = 0
+    
+    print("🔹 유효한 Gross Code(k > 0) 탐색 중...")
+    
+    while True:
+        attempts += 1
+        # Weight 3 (Row weight 6)를 위한 랜덤 Shift 3개씩 생성
+        shifts_A = sorted(random.sample(range(L), 3))
+        shifts_B = sorted(random.sample(range(L), 3))
         
-        # 스케줄링 (Graph Coloring) - 회로 Depth 최적화
-        self.z_schedule = self._build_schedule(self.hz)
-        self.x_schedule = self._build_schedule(self.hx)
-
-    def _get_cyclic_shift(self, size, shift):
-        data = np.ones(size)
-        rows = np.arange(size)
-        cols = (rows + shift) % size
-        return csr_matrix((data, (rows, cols)), shape=(size, size))
-
-    def _construct_matrices(self):
-        I_l = eye(self.L_dim); I_m = eye(self.M_dim)
-        S_l = self._get_cyclic_shift(self.L_dim, 1)
-        S_m = self._get_cyclic_shift(self.M_dim, 1)
+        A = get_circulant(L, shifts_A)
+        B = get_circulant(L, shifts_B)
         
-        x = kron(S_l, I_m)
-        y = kron(I_l, S_m)
-
-        A = (x ** 3) + y + (y ** 2)
-        B = (y ** 3) + x + (x ** 2)
-        A = A.toarray().astype(int) % 2
-        B = B.toarray().astype(int) % 2
-
+        # Hx = [A, B], Hz = [B.T, A.T]
         Hx = np.hstack([A, B])
         Hz = np.hstack([B.T, A.T])
-        return csr_matrix(Hx), csr_matrix(Hz)
-
-    def _build_schedule(self, H):
-        num_checks, num_data = H.shape
-        G = nx.Graph()
-        G.add_nodes_from(range(num_checks))
         
-        rows, cols = H.nonzero()
-        qubit_to_checks = {}
-        for r, c in zip(rows, cols):
-            if c not in qubit_to_checks: qubit_to_checks[c] = []
-            qubit_to_checks[c].append(r)
+        # 랭크 계산 (GF(2))
+        rank_x = mod2.rank(Hx)
+        rank_z = mod2.rank(Hz)
+        n = 144
+        k = n - rank_x - rank_z
+        
+        # Commutativity Check: Hx * Hz.T == 0
+        # Bicycle 구조상 A, B가 commute하면 자동 만족하지만 확인
+        
+        if k > 0:
+            print(f"✅ 코드 발견! (시도 {attempts}회)")
+            print(f"   - Shifts A: {shifts_A}")
+            print(f"   - Shifts B: {shifts_B}")
+            print(f"   - Parameters: [[n={n}, k={k}, d=?]]")
+            return Hx, Hz
             
-        for q in qubit_to_checks:
-            checks = qubit_to_checks[q]
-            for i in range(len(checks)):
-                for j in range(i+1, len(checks)):
-                    G.add_edge(checks[i], checks[j])
-        
-        coloring = nx.coloring.greedy_color(G, strategy='largest_first')
-        
-        schedule = {}
-        for check_idx, color in coloring.items():
-            if color not in schedule: schedule[color] = []
-            schedule[color].append(check_idx)
-        return list(schedule.values())
+        if attempts > 100:
+            print("⚠️ 100회 시도에도 코드를 찾지 못했습니다. 설정을 확인하세요.")
+            exit()
 
-def build_noisy_gross_circuit_z_memory(gross, p):
+def find_logical_z_operator(Hx, Hz):
     """
-    Constructs a Stim circuit for Z-basis Memory Experiment.
-    Init |0> -> Noise -> Measure Syndromes -> Check Logical Z
+    Hx, Hz가 주어졌을 때 유효한 Logical Z 연산자 하나를 찾음
     """
+    try:
+        # Hx * z = 0 (Kernel)
+        lz_candidates = mod2.nullspace(Hx) 
+        
+        # Sparse -> Dense 변환
+        if issparse(lz_candidates) or hasattr(lz_candidates, "toarray"):
+            lz_candidates = lz_candidates.toarray()
+            
+        if lz_candidates.ndim == 1:
+            lz_candidates = np.array([lz_candidates])
+            
+        hz_rank = mod2.rank(Hz)
+        
+        # Kernel 벡터 중 Hz(Stabilizer)와 독립적인 것 탐색
+        for cand in lz_candidates:
+            cand_row = cand.flatten()
+            combined = np.vstack([Hz, cand_row])
+            if mod2.rank(combined) > hz_rank:
+                return cand_row 
+                
+    except Exception as e:
+        print(f"⚠️ Logical Operator 탐색 에러: {e}")
+        
+    return np.zeros(Hx.shape[1], dtype=int)
+
+# ==============================================================================
+# [Helper] Stim 구버전 호환용 DEM 파싱 함수
+# ==============================================================================
+def dem_to_matrices_manual(dem):
+    priors = []
+    cols_check, rows_check = [], []
+    cols_obs, rows_obs = [], []
+    
+    err_idx = 0
+    for instr in dem:
+        if instr.type == "error":
+            p = instr.args_copy()[0]
+            priors.append(p)
+            for t in instr.targets_copy():
+                if t.is_relative_detector_id():
+                    rows_check.append(t.val)
+                    cols_check.append(err_idx)
+                elif t.is_logical_observable_id():
+                    rows_obs.append(t.val)
+                    cols_obs.append(err_idx)
+            err_idx += 1
+            
+    num_errors = err_idx
+    num_detectors = dem.num_detectors
+    num_observables = dem.num_observables
+    
+    check_matrix = csc_matrix((np.ones(len(cols_check)), (rows_check, cols_check)), shape=(num_detectors, num_errors))
+    observables_matrix = csc_matrix((np.ones(len(cols_obs)), (rows_obs, cols_obs)), shape=(num_observables, num_errors))
+    
+    return check_matrix, observables_matrix, np.array(priors)
+
+# ==============================================================================
+# 2. Circuit Generator (Gate-Based Accurate Noise Model)
+# ==============================================================================
+def generate_gross_code_circuit_accurate(Hx, Hz, logical_z_op, p, rounds):
+    num_data = Hx.shape[1]
+    num_x_checks = Hx.shape[0]
+    num_z_checks = Hz.shape[0]
+    
+    data_qubits = list(range(num_data))
+    anc_x_start = num_data
+    anc_z_start = anc_x_start + num_x_checks
+    
     circuit = stim.Circuit()
     
-    # Ancilla Map: Z-checks (144~215), X-checks (216~287)
-    
-    # 1. Z-Check Cycle (Hz measures Z-operators -> Detects X Errors)
-    ancilla_offset_z = 144
-    for batch in gross.z_schedule:
-        targets_init = [a + ancilla_offset_z for a in batch]
-        circuit.append("R", targets_init)
-        circuit.append("DEPOLARIZE1", targets_init, p)
-        
-        for check_idx in batch:
-            row = gross.hz[check_idx]
-            data_qubits = row.nonzero()[1]
-            ancilla = check_idx + ancilla_offset_z
-            for dq in data_qubits:
-                circuit.append("CNOT", [dq, ancilla])
-                circuit.append("DEPOLARIZE2", [dq, ancilla], p)
-        
-        circuit.append("X_ERROR", targets_init, p) 
-        circuit.append("M", targets_init)
+    x_ancillas = list(range(anc_x_start, anc_x_start + num_x_checks))
+    z_ancillas = list(range(anc_z_start, anc_z_start + num_z_checks))
+    all_ancillas = x_ancillas + z_ancillas
+    all_qubits = data_qubits + all_ancillas
 
-    # 2. X-Check Cycle (Hx measures X-operators -> Detects Z Errors)
-    # (Although we are in Z-basis, we still run this to simulate full circuit noise)
-    ancilla_offset_x = 144 + 72
-    for batch in gross.x_schedule:
-        targets_init = [a + ancilla_offset_x for a in batch]
-        circuit.append("R", targets_init)
-        circuit.append("DEPOLARIZE1", targets_init, p)
-        circuit.append("H", targets_init)
-        circuit.append("DEPOLARIZE1", targets_init, p)
-        
-        for check_idx in batch:
-            row = gross.hx[check_idx]
-            data_qubits = row.nonzero()[1]
-            ancilla = check_idx + ancilla_offset_x
-            for dq in data_qubits:
-                circuit.append("CNOT", [ancilla, dq])
-                circuit.append("DEPOLARIZE2", [ancilla, dq], p)
-        
-        circuit.append("H", targets_init)
-        circuit.append("DEPOLARIZE1", targets_init, p)
-        circuit.append("X_ERROR", targets_init, p) 
-        circuit.append("M", targets_init)
+    # --- A. Initialization ---
+    circuit.append("R", all_qubits)
+    circuit.append("X_ERROR", all_qubits, p) 
 
-    # 3. Logical Ground Truth Check (ONLY Z)
-    # Logical X measurement removed to avoid random collapse of |0> state
+    # --- B. Syndrome Extraction Rounds ---
+    for r in range(rounds):
+        # 1. X-Checks
+        circuit.append("H", x_ancillas)
+        circuit.append("DEPOLARIZE1", x_ancillas, p)
+
+        for i in range(num_x_checks):
+            anc = anc_x_start + i
+            targets = np.nonzero(Hx[i, :])[0]
+            for t in targets:
+                circuit.append("CNOT", [anc, t])
+                circuit.append("DEPOLARIZE2", [anc, t], p)
+
+        circuit.append("H", x_ancillas)
+        circuit.append("DEPOLARIZE1", x_ancillas, p)
+
+        # 2. Z-Checks
+        for i in range(num_z_checks):
+            anc = anc_z_start + i
+            targets = np.nonzero(Hz[i, :])[0]
+            for t in targets:
+                circuit.append("CNOT", [t, anc])
+                circuit.append("DEPOLARIZE2", [t, anc], p)
+
+        # 3. Measure Ancillas
+        circuit.append("X_ERROR", all_ancillas, p) 
+        circuit.append("MR", all_ancillas) 
+        circuit.append("X_ERROR", all_ancillas, p) 
+
+        # 4. Detectors
+        for i in range(num_x_checks):
+            rec_idx = - (num_x_checks + num_z_checks) + i
+            if r == 0: pass 
+            else:
+                targets = [stim.target_rec(rec_idx), stim.target_rec(rec_idx - (num_x_checks + num_z_checks))]
+                circuit.append("DETECTOR", targets, [float(r), float(i), 0.0])
+
+        for i in range(num_z_checks):
+            rec_idx = - num_z_checks + i
+            targets = []
+            if r == 0: targets = [stim.target_rec(rec_idx)] 
+            else: targets = [stim.target_rec(rec_idx), stim.target_rec(rec_idx - (num_x_checks + num_z_checks))]
+            circuit.append("DETECTOR", targets, [float(r), float(i), 1.0])
+
+    # --- C. Final Measurement ---
+    circuit.append("X_ERROR", data_qubits, p)
+    circuit.append("M", data_qubits)
     
-    # Logical Z (Lz) - This is deterministic for |0> state
-    for i in range(gross.css.K):
-        cols = gross.lz[i].nonzero()[1]
-        targets = []
-        for c in cols:
-            targets.append(stim.target_z(c))
-            targets.append(stim.target_combiner())
-        if targets: targets.pop()
-        circuit.append("MPP", targets)
-        
+    for i in range(num_z_checks):
+        targets = np.nonzero(Hz[i, :])[0]
+        rec_targets = [stim.target_rec(t - num_data) for t in targets] 
+        last_ancilla_rec = stim.target_rec(-num_data - num_z_checks + i)
+        circuit.append("DETECTOR", rec_targets + [last_ancilla_rec], [float(rounds), float(i), 1.0])
+
+    # Logical Observable
+    obs_targets = [stim.target_rec(t - num_data) for t in logical_z_op]
+    circuit.append("OBSERVABLE_INCLUDE", obs_targets, 0.0)
+
     return circuit
 
-def run_gross_worker(args):
-    p, shots = args
-    p = float(p)
-    
-    gross = GrossCode144()
-    
-    # [Fix] Use Z-Memory Circuit
-    circuit = build_noisy_gross_circuit_z_memory(gross, p)
-    sampler = circuit.compile_sampler()
-    samples = sampler.sample(shots)
-    
-    # Mapping reconstruction
-    z_measure_order = []
-    for batch in gross.z_schedule:
-        z_measure_order.extend(batch)
-    
-    # X measurement results are present but not used for X-correction
-    # (Because Z-errors don't flip Logical Z)
-    num_z = 72
-    num_x = 72
-    
-    # Samples layout: [Syndrome_Z (72) | Syndrome_X (72) | Logical_Z (12)]
-    raw_z = samples[:, :num_z]
-    # raw_x = samples[:, num_z : num_z + num_x] # Not needed for Z-memory X-correction
-    actual_flips_lz = samples[:, num_z + num_x:]
-    
-    # Sort Z syndromes
-    sorted_z = np.zeros_like(raw_z)
-    for meas_idx, check_idx in enumerate(z_measure_order):
-        sorted_z[:, check_idx] = raw_z[:, meas_idx]
-        
-    # Decoder for X-errors (Uses Hz syndromes)
-    # We only care about X-errors because they flip Logical Z.
-    bpd_x = bposd_decoder(
-        gross.css.hz,
-        error_rate=p,
-        max_iter=50,
-        bp_method="ms",
-        osd_method="osd_cs",
-        osd_order=10
-    )
-    
-    logical_errors = 0
-    
-    for i in range(shots):
-        # 1. Decode X-errors using Hz
-        corr_x = bpd_x.decode(sorted_z[i]) 
-        
-        # 2. Check if Correction flips Logical Z
-        # (Original Z-noise doesn't matter for Z-basis memory)
-        pred_lz = (gross.lz @ corr_x) % 2
-        
-        # 3. Compare with Ground Truth
-        if not np.array_equal(pred_lz, actual_flips_lz[i]):
-            logical_errors += 1
-            
-    return logical_errors, shots
-
 # ==============================================================================
-# Main
+# 3. Simulation Worker
 # ==============================================================================
-def main():
-    physical_error_rates = np.geomspace(1e-4, 1e-2, 10)
-    target_shots = 1_000_00
-    num_workers = max(1, multiprocessing.cpu_count() - 2)
+@dataclass
+class SimParams:
+    code_type: str 
+    p: float
+    shots: int
+    distance: int = 0
+    gross_hx: np.ndarray = None
+    gross_hz: np.ndarray = None
+    gross_lz: list = None
 
-    print(f"===========================================================")
-    print(f" Circuit-Level Comparison: Gross Code vs Surface Code")
-    print(f" Experiment: Z-Basis Memory (Robustness against X-errors)")
-    print(f" Shots: {target_shots}, Workers: {num_workers}")
-    print(f"===========================================================")
-
-    # 1. Surface Code (Sinter)
-    print("\n>>> [1/2] Running Rotated Surface Code (Circuit Level)...")
-    surface_distances = [3, 5, 7, 9]
-    surface_results = {}
-    
-    tasks = []
-    for d in surface_distances:
-        for p in physical_error_rates:
-            p_float = float(p)
-            tasks.append(
-                sinter.Task(
-                    circuit=stim.Circuit.generated(
-                        "surface_code:rotated_memory_z",
-                        rounds=d, distance=d,
-                        after_clifford_depolarization=p_float,
-                        after_reset_flip_probability=p_float,
-                        before_measure_flip_probability=p_float,
-                        before_round_data_depolarization=p_float
-                    ),
-                    json_metadata={'d': d, 'p': p_float}
-                )
-            )
-            
-    collected_stats = sinter.collect(
-        num_workers=num_workers,
-        tasks=tasks,
-        max_shots=target_shots,
-        decoders=['pymatching'],
-        print_progress=False
-    )
-    print("    Surface Code simulation complete.")
-    
-    for d in surface_distances:
-        stats_d = [s for s in collected_stats if s.json_metadata['d'] == d]
-        stats_d.sort(key=lambda s: s.json_metadata['p'])
-        surface_results[d] = (
-            [s.json_metadata['p'] for s in stats_d],
-            [s.errors / s.shots if s.shots > 0 else 0 for s in stats_d]
+def worker_simulation(params: SimParams):
+    if params.code_type == "surface":
+        circuit = stim.Circuit.generated(
+            "surface_code:rotated_memory_z",
+            rounds=params.distance,
+            distance=params.distance,
+            after_clifford_depolarization=params.p,
+            after_reset_flip_probability=params.p,
+            before_measure_flip_probability=params.p,
+            before_round_data_depolarization=params.p
+        )
+    else:
+        rounds = 12 if params.distance == 0 else params.distance 
+        circuit = generate_gross_code_circuit_accurate(
+            params.gross_hx, params.gross_hz, params.gross_lz, params.p, rounds
         )
 
-    # 2. Gross Code (Circuit Level)
-    print("\n>>> [2/2] Running Gross Code [[144,12,12]] (Circuit Level)...")
-    gross_ler = []
+    sampler = circuit.compile_detector_sampler()
+    batch_size = 20_000
+    total_errors = 0
+    executed_shots = 0
     
-    chunk_size = target_shots // num_workers
-    chunks = [chunk_size] * num_workers
-    if target_shots % num_workers: chunks[-1] += (target_shots % num_workers)
+    # [설정] 복잡한 에러 분해 실패 허용 옵션
+    dem = circuit.detector_error_model(
+        decompose_errors=True, 
+        ignore_decomposition_failures=True
+    )
     
-    with multiprocessing.Pool(num_workers) as pool:
-        for p in physical_error_rates:
-            p_float = float(p)
-            start_t = time.time()
-            jobs = [(p_float, c) for c in chunks]
-            
-            results = pool.map(run_gross_worker, jobs)
-            
-            errs = sum(r[0] for r in results)
-            runs = sum(r[1] for r in results)
-            ler = errs / runs
-            gross_ler.append(ler)
-            print(f"    p={p_float:.5f} | LER={ler:.6f} | Time={time.time()-start_t:.1f}s")
+    if params.code_type == "surface":
+        matcher = pymatching.Matching.from_detector_error_model(dem)
+        while executed_shots < params.shots:
+            current_batch = min(batch_size, params.shots - executed_shots)
+            syndrome_batch, actual_obs_batch = sampler.sample(shots=current_batch, separate_observables=True)
+            predicted_obs = matcher.decode_batch(syndrome_batch)
+            errors = np.sum(np.any(predicted_obs != actual_obs_batch, axis=1))
+            total_errors += errors
+            executed_shots += current_batch
+            if total_errors > 500: break
+    else:
+        # Gross Code: BP+OSD
+        try:
+            dem_m = dem.to_dem_matrices(probability_func=lambda x: x)
+            check_mat = csc_matrix(dem_m.check_matrix)
+            obs_mat = csc_matrix(dem_m.observables_matrix)
+            priors = dem_m.priors
+        except AttributeError:
+            check_mat, obs_mat, priors = dem_to_matrices_manual(dem)
 
-    # 3. Plot
-    print("\n>>> Generating Plot...")
+        bp_decoder = bposd_decoder(
+            check_mat,                  
+            error_rate=0.0001,          
+            channel_probs=priors,       
+            max_iter=50, bp_method="ms", osd_method="osd_cs", osd_order=10
+        )
+        
+        while executed_shots < params.shots:
+            current_batch = min(batch_size, params.shots - executed_shots)
+            syndrome_batch, actual_obs_batch = sampler.sample(shots=current_batch, separate_observables=True)
+            
+            preds_logical = []
+            for i in range(current_batch):
+                estimated_error_mechanisms = bp_decoder.decode(syndrome_batch[i])
+                predicted_flip = (obs_mat @ estimated_error_mechanisms) % 2
+                preds_logical.append(predicted_flip)
+            
+            predicted_obs = np.array(preds_logical).reshape(-1, 1)
+            errors = np.sum(np.any(predicted_obs != actual_obs_batch, axis=1))
+            total_errors += errors
+            executed_shots += current_batch
+            if total_errors > 500: break
+            
+    return (params.code_type, params.distance, params.p, total_errors, executed_shots)
+
+# ==============================================================================
+# 4. Main Execution
+# ==============================================================================
+if __name__ == "__main__":
+    # --------------------------------------------------------------------------
+    # [STEP 1] Valid Gross Code (k>0) 자동 생성
+    # --------------------------------------------------------------------------
+    Hx_gen, Hz_gen = generate_valid_gross_code() # 수정된 생성 함수 호출
+    
+    print("🔹 Logical Z Operator 탐색 중...")
+    Lz_gen_vector = find_logical_z_operator(Hx_gen, Hz_gen)
+    
+    if not np.any(Lz_gen_vector):
+        print("❌ 실패: Logical Z를 찾을 수 없습니다. (매우 드문 경우)")
+        exit()
+        
+    Lz_gen = np.nonzero(Lz_gen_vector)[0].tolist()
+    print(f"✅ 시뮬레이션 준비 완료! (Logical Z Weight={len(Lz_gen)})")
+
+    # 파라미터 설정
+    surface_distances = [3, 5, 7, 9]
+    physical_error_rates = np.geomspace(1e-4, 1e-2, 10)
+    target_shots = 1_000_000 
+    num_workers = max(1, multiprocessing.cpu_count() - 2)
+    
+    tasks = []
+    
+    for d in surface_distances:
+        for p in physical_error_rates:
+            tasks.append(SimParams("surface", p, target_shots, distance=d))
+    
+    for p in physical_error_rates:
+        tasks.append(SimParams("gross", p, target_shots, gross_hx=Hx_gen, gross_hz=Hz_gen, gross_lz=Lz_gen))
+
+    print(f"🚀 시뮬레이션 시작 (Workers: {num_workers})...")
+    
+    results = { "surface": {}, "gross": {} }
+    for d in surface_distances: results["surface"][d] = ([], [])
+    results["gross"] = ([], [])
+
+    with multiprocessing.Pool(num_workers) as pool:
+        for res in pool.imap_unordered(worker_simulation, tasks):
+            c_type, dist, p, errs, shots = res
+            ler = errs / shots
+            
+            d_str = f"d={dist}" if dist else "Gross"
+            print(f"[{c_type.upper()}] {d_str:<4} p={p:.5f} -> LER={ler:.2e} ({errs}/{shots})")
+            
+            if c_type == "surface":
+                results["surface"][dist][0].append(p)
+                results["surface"][dist][1].append(ler)
+            else:
+                results["gross"][0].append(p)
+                results["gross"][1].append(ler)
+
+    # 그래프 저장
     plt.figure(figsize=(10, 8))
-    
-    plt.loglog(physical_error_rates, gross_ler, 'D-', color='black', linewidth=2.5, markersize=8, label='[[144,12,12]] Gross (Circuit Noise)')
-    
+    plt.plot([1e-4, 1e-2], [1e-4, 1e-2], 'k:', alpha=0.5, label='Break-even (PL=p)')
+
     colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red']
     for i, d in enumerate(surface_distances):
-        x_vals = surface_results[d][0]
-        y_vals = surface_results[d][1]
-        plt.loglog(x_vals, y_vals, 'o--', color=colors[i], label=f'Surface d={d} (Circuit Noise)')
-        
-    plt.loglog(physical_error_rates, physical_error_rates, 'k:', alpha=0.3, label='Break-even')
-    
-    plt.grid(True, which="both", linestyle='--', alpha=0.4)
-    plt.xlabel('Physical Error Rate (p)', fontsize=12)
-    plt.ylabel('Logical Error Rate ($P_L$)', fontsize=12)
-    plt.title('Circuit-Level Threshold: Gross Code vs Surface Code', fontsize=14)
+        p_data, ler_data = results["surface"][d]
+        sorted_pairs = sorted(zip(p_data, ler_data))
+        if sorted_pairs:
+            plt.plot(*zip(*sorted_pairs), marker='o', linestyle='--', color=colors[i], label=f'Surface d={d}')
+
+    p_g, ler_g = results["gross"]
+    sorted_pairs_g = sorted(zip(p_g, ler_g))
+    if sorted_pairs_g:
+        plt.plot(*zip(*sorted_pairs_g), marker='D', color='black', linewidth=2, label='Generated Gross Code')
+
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.xlabel('Physical Error Rate (p)')
+    plt.ylabel('Logical Error Rate ($P_L$)')
+    plt.title('Circuit-Level Threshold: Gross Code vs Surface Code')
+    plt.grid(True, which="both", linestyle='--', alpha=0.3)
     plt.legend()
     
-    plt.savefig("circuit_level_comparison_z_basis.png")
-    print(">>> Saved to 'circuit_level_comparison_z_basis.png'")
-    plt.show()
-
-if __name__ == "__main__":
-    main()
+    filename = "gross_vs_surface_final.png"
+    plt.savefig(filename, dpi=300)
+    print(f"\n✅ 그래프 저장 완료: {filename}")
