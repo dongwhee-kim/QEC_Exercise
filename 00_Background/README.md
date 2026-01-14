@@ -70,6 +70,8 @@ In superconducting systems, Quantum Error Correction (QEC) relies on parity qubi
 
 However, maintaining this loop is a strict race against time. On the existing device technology (Google Sycamore), the syndrome extraction circuit completes in approximately **1 µs** **[1, 2]** (**[13] completes in 1.1us**). This imposes a hard time constraint: if the decoding software cannot keep up with the data generation rate (throughput), the backlog grows indefinitely, causing buffer overflow. Consequently, designing accurate, real-time decoders is a critical area of research.
 
+**Why 'd' rounds? To tolerate errors during syndrome extraction**
+
 **Note: Current Software-based MWPM decoding latency exceeds 1 µs. In fact, Google's paper reported an average decoding latency of 63 µs at distance-5, sustained for up to a million cycles using software-based parallel processing [9].**
 
 ### Summary: Cycle Definitions & Hardware Mapping
@@ -111,9 +113,9 @@ To satisfy the strict **1 µs latency budget**, we avoid applying physical corre
 Single-shot measurements are unreliable due to physical measurement errors. Therefore, we do not make a final decision based on a single cycle. We make a final decision based on a single **logical cycle**.
 - **Accumulation**: We repeat the QEC cycle for $d$ rounds (where $d$ is the code distance of Surface Code).
 - **Spacetime Volume**: The Host/Decoder collects the syndrome history over these $d$ rounds, creating a 3D spacetime decoding graph ($2D$ space $+ 1D$ time). **$m = (d - 1)$ rounds are required to match the code's error correction capability [8].**
-    - **Space Error**: Data qubit errors
-    - **Time Error**: Measurement errors in syndrome extraction
-    - **Space-Time Error**: Gate errors in syndrome extraction
+    - **Space-like Event**: Data qubit errors
+    - **Time-like Event**: Measurement errors in syndrome extraction
+    - **Space-Time-like Event**: Gate errors in syndrome extraction
 - **Delayed Correction**: The Decoder solves the matching problem (MWPM) utilizing **(X/Z) decoding graph** across this entire window to identify the most probable error chain.
 - **Application: Delayed Correction Strategy**
     - **Rounds $1 \dots (d-1)$ (Accumulation)**: The syndrome data is streamed to the Host (Step ❼) every round. The Decoder identifies errors and updates the **Pauli Frame** in software. **Crucially, Step ❽ (Physical Feedback) does NOT occur during these rounds.** No physical corrections are applied to the qubits, and the FPGA proceeds to the next round immediately. 
