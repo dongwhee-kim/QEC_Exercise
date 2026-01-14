@@ -111,6 +111,7 @@ To satisfy the strict **1 µs latency budget**, we avoid applying physical corre
 **II. The Time Axis: Waiting for $d$ Rounds**
 
 Single-shot measurements are unreliable due to physical measurement errors. Therefore, we do not make a final decision based on a single cycle. We make a final decision based on a single **logical cycle**.
+- **Logical cycle**: The fundanemtal unit of time required to reliably execute a single logical operation (e.g., a logical gate or measurement), which typically spans 'd' rounds of syndrome extraction.
 - **Accumulation**: We repeat the QEC cycle for $d$ rounds (where $d$ is the code distance of Surface Code).
 - **Spacetime Volume**: The Host/Decoder collects the syndrome history over these $d$ rounds, creating a 3D spacetime decoding graph ($2D$ space $+ 1D$ time). **$m = (d - 1)$ rounds are required to match the code's error correction capability [8].**
     - **Space-like Event**: Data qubit errors
