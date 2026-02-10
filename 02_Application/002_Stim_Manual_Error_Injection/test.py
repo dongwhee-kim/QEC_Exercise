@@ -55,14 +55,13 @@ x_det_indices = []
 z_det_indices = []
 time_coords = []
 
-# Stim 좌표가 2단위(0, 2, 4...)로 되어있을 수 있으므로 2로 나누어 홀짝을 판별합니다.
+# Stim coordinates might be in units of 2 (0, 2, 4...), so divide by 2 to determine parity.
 for k, v in detector_coords.items():
     x, y, t = v
     time_coords.append(t)
     
-    # [수정된 로직]
-    # 좌표 합을 2로 나눈 몫의 홀짝성(Checkerboard pattern)으로 구분
-    # Rotated Code에서 일반적으로 이 방식이 X/Z를 분리합니다.
+    # Distinguish by the parity of the sum of coordinates divided by 2 (Checkerboard pattern)
+    # This method generally separates X/Z in Rotated Code.
     if int(x + y) // 2 % 2 == 0:
         z_det_indices.append(k)
     else:
@@ -141,7 +140,8 @@ for shot_idx in range(shots):
         elif name == "TICK":
             noisy_circuit.append(instruction)
             for q in range(num_qubits):
-                if random.random() < p_idle:
+                # Inject error with probability /4 (p_idle / 4) per tick
+                if random.random() < (p_idle / 4):
                     noisy_circuit.append(get_random_pauli_error_gate(), [q], 1.0)
                     fault_counts["Data Idle"] += 1
         
@@ -158,7 +158,7 @@ for shot_idx in range(shots):
     detection_events, actual_flips = sampler.sample(shots=1, separate_observables=True)
     syndrome = detection_events[0]
     
-    # === [FIXED] Separate Hamming Weights ===
+    # === Separate Hamming Weights (X/Z) ===
     if len(x_det_indices) > 0:
         hw_x_list.append(np.sum(syndrome[x_det_indices]))
     else:
@@ -169,7 +169,7 @@ for shot_idx in range(shots):
     else:
         hw_z_list.append(0)
 
-    # === Decoding ===
+    # === Decoding (PyMatching) ===
     predicted_flip = matcher.decode_batch(detection_events)[0][0]
     actual_flip = bool(actual_flips[0][0])
     
@@ -189,7 +189,7 @@ z_hw_counts = Counter(hw_z_list)
 
 def format_hw_table(hw_counts, total_shots):
     lines = []
-    # Key가 없어도 0부터 max 키까지 혹은 존재하는 키만 정렬
+    # Sort by existing keys
     sorted_keys = sorted(hw_counts.keys())
     if not sorted_keys: return "No Data"
     
