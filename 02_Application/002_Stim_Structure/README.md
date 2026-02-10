@@ -11,7 +11,7 @@ In the `rotated_memory_x` layout, qubits are placed on a 2D grid defined by `QUB
 - **Role**: Store the logical quantum information.
 - **In .stim file**: Initialized using `RX` (for X-basis memory) and are the targets of multiple CNOT gates.
 
-### 2. Stabilizer Qubits (Measure/Ancilla)
+### 2. Ancilla Qubits (Measurement)
 These are located between data qubits and are used to detect errors without collapsing the data state.
 - **Coordinates**: Located at **even** coordinates (e.g., `(2,2)`, `(2,0)`).
 - **How to distinguish X vs Z**:
