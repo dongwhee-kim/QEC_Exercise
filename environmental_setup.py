@@ -22,6 +22,7 @@ PACKAGES = [
     "stim",
     "sinter",
     "ldpc",
+    "cairosvg",
     "bposd"
 ]
 
