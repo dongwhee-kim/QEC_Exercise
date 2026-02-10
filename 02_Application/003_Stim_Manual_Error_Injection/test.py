@@ -140,11 +140,11 @@ for shot_idx in range(shots):
         elif name == "TICK":
             noisy_circuit.append(instruction)
             for q in range(num_qubits):
-                # Inject error with probability /4 (p_idle / 4) per tick
-                if random.random() < (p_idle / 4):
+                # Inject error with probability /7 (p_idle / 7) per tick
+                # R -> H -> CX -> CX -> CX -> CX -> H -> MR
+                if random.random() < (p_idle / 7):
                     noisy_circuit.append(get_random_pauli_error_gate(), [q], 1.0)
                     fault_counts["Data Idle"] += 1
-        
         # [Type 4] Gates
         else:
             noisy_circuit.append(instruction)
