@@ -1,8 +1,8 @@
 import stim
 
 # 1. Set parameters for the surface code
-rounds = 3
-distance = 3
+rounds = 5
+distance = 5
 
 # 2. Generate an ideal surface code circuit (noise-free)
 # All error probabilities are set to 0 to inspect the clean structure

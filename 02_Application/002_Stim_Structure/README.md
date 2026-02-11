@@ -1,4 +1,4 @@
-# Stim - Inspection Surface Code Structure
+# Stim - Inspection Surface Code Structure (d = odd)
 
 This project generates and inspects the structure of an ideal (noise-free) rotated surface code circuit using Google's Stim library.
 
