@@ -8,6 +8,7 @@ The generated `.stim` file contains the full definition of a quantum error corre
 
 - **QUBIT_COORDS**: Defines the 2D layout coordinates for each physical qubit, used for visualization.
 - **R / RX (Reset)**: Initializes qubits into a specific state ($|0\rangle$ or $|+\rangle$).
+    - **Initial Logical State: 0 (RX 1 3 5 8 10 12 15 17 19)**
 - **TICK**: Represents a time step barrier. Operations between two TICKs are executed in parallel.
 - **H / CX (Gates)**: Clifford gates (Hadamard and CNOT) used for syndrome extraction cycles.
 - **M (Measure)**: Physical measurement of qubits at the end of a round or for syndrome extraction.
@@ -52,10 +53,59 @@ The directions in the 2nd and 3rd CX steps are reversed
 ### 4. Detector
 | Stage | Stim Logic (XOR Sum) | Purpose |
 | :--- | :--- | :--- |
-| **1. Initial** | $rec[-n] = 0$ | **Initialization Check**: Verifies X-stabilizers return 0 after $|+\rangle$ setup. |
+| **1. Initial** | $rec[-n] = 0$ | **Initialization Check**: Verifies X-stabilizers return 0 after |+> setup. |
 | **2. Repeat** | $rec[-n] \oplus rec[-m] = 0$ | **Stability Check**: Compares the current syndrome to the previous round. |
 | **3. Final** | $Data \oplus Ancilla = 0$ | **Readout Check**: Matches final data parity against the last syndrome. |
 | **4. Logical** | `OBSERVABLE_INCLUDE` | **Success Criterion**: Final parity of the **Logical X** operator. |
+
+#### Measurement Record Mapping (Final Round)
+
+| Index | Target Qubit | Type | Description |
+| :---: | :---: | :---: | :--- |
+| `rec[-1]` | **Data 19** | Data | Final MX (Last measured) |
+| `rec[-2]` | **Data 17** | Data | |
+| `rec[-3]` | **Data 15** | Data | |
+| `rec[-4]` | **Data 12** | Data | |
+| `rec[-5]` | **Data 10** | Data | |
+| `rec[-6]` | **Data 8** | Data | |
+| `rec[-7]` | **Data 5** | Data | |
+| `rec[-8]` | **Data 3** | Data | |
+| `rec[-9]` | **Data 1** | Data | Final MX (First measured) |
+| `rec[-10]` | **X 25** | Stabilizer | Round $T$ (Last Cycle) |
+| `rec[-11]` | **Z 18** | Stabilizer | |
+| `rec[-12]` | **X 16** | Stabilizer | |
+| `rec[-13]` | **Z 14** | Stabilizer | |
+| `rec[-14]` | **Z 13** | Stabilizer | |
+| `rec[-15]` | **X 11** | Stabilizer | |
+| `rec[-16]` | **Z 9** | Stabilizer | |
+| `rec[-17]` | **X 2** | Stabilizer | Round $T$ (First measured) |
+| `rec[-18]` | **X 25** | Stabilizer | Round $T-1$ (Previous Cycle) |
+| `rec[-19]` | **Z 18** | Stabilizer | |
+| `rec[-20]` | **X 16** | Stabilizer | |
+| `rec[-21]` | **Z 14** | Stabilizer | |
+| `rec[-22]` | **Z 13** | Stabilizer | |
+| `rec[-23]` | **X 11** | Stabilizer | |
+| `rec[-24]` | **Z 9** | Stabilizer | |
+| `rec[-25]` | **X 2** | Stabilizer | |
+
+#### Final Boundary Detectors
+
+**1. Top-Left (X2): Data 3 ⊕ Data 1 ⊕ Last X2**
+DETECTOR(2, 0, 1) rec[-8] rec[-9] rec[-17]
+
+**2. Center (X16): Data 17 ⊕ 15 ⊕ 10 ⊕ 8 ⊕ Last X16**
+DETECTOR(2, 4, 1) rec[-2] rec[-3] rec[-5] rec[-6] rec[-12]
+
+**3. Center (X11): Data 12 ⊕ 10 ⊕ 5 ⊕ 3 ⊕ Last X11**
+DETECTOR(4, 2, 1) rec[-4] rec[-5] rec[-7] rec[-8] rec[-15]
+
+**4. Bottom-Right (X25): Data 19 ⊕ 17 ⊕ Last X25**
+DETECTOR(4, 6, 1) rec[-1] rec[-2] rec[-10]
+
+**Logical Observable (L_X): Data 15 ⊕ 8 ⊕ 1 (X along Top Boundary)**
+OBSERVABLE_INCLUDE(0) rec[-3] rec[-6] rec[-9]
+ - **Logical Flip**: Logical Observable $(L_X) \neq 0$ (Initial Logical State)
+ - **Logical Failure**: Decoder (e.g., PyMatching) incorrectly predicts the logical flip
 
 # Getting Started
 - $ python Stim_Structure.py
