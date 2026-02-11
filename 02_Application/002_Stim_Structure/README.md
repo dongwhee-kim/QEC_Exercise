@@ -91,19 +91,19 @@ The directions in the 2nd and 3rd CX steps are reversed
 #### Final Boundary Detectors
 
 **1. Top-Left (X2): Data 3 ⊕ Data 1 ⊕ Last X2**
-DETECTOR(2, 0, 1) rec[-8] rec[-9] rec[-17]
+ - DETECTOR(2, 0, 1) rec[-8] rec[-9] rec[-17]
 
 **2. Center (X16): Data 17 ⊕ 15 ⊕ 10 ⊕ 8 ⊕ Last X16**
-DETECTOR(2, 4, 1) rec[-2] rec[-3] rec[-5] rec[-6] rec[-12]
+ - DETECTOR(2, 4, 1) rec[-2] rec[-3] rec[-5] rec[-6] rec[-12]
 
 **3. Center (X11): Data 12 ⊕ 10 ⊕ 5 ⊕ 3 ⊕ Last X11**
-DETECTOR(4, 2, 1) rec[-4] rec[-5] rec[-7] rec[-8] rec[-15]
+ - DETECTOR(4, 2, 1) rec[-4] rec[-5] rec[-7] rec[-8] rec[-15]
 
 **4. Bottom-Right (X25): Data 19 ⊕ 17 ⊕ Last X25**
-DETECTOR(4, 6, 1) rec[-1] rec[-2] rec[-10]
+ - DETECTOR(4, 6, 1) rec[-1] rec[-2] rec[-10]
 
 **Logical Observable (L_X): Data 15 ⊕ 8 ⊕ 1 (X along Top Boundary)**
-OBSERVABLE_INCLUDE(0) rec[-3] rec[-6] rec[-9]
+ - OBSERVABLE_INCLUDE(0) rec[-3] rec[-6] rec[-9]
  - **Logical Flip**: Logical Observable $(L_X) \neq 0$ (Initial Logical State)
  - **Logical Failure**: Decoder (e.g., PyMatching) incorrectly predicts the logical flip
 
