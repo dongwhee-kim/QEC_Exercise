@@ -10,20 +10,21 @@ from collections import Counter
 # ==========================================
 distance = 3
 rounds = 3
-shots = 1000 
+shots = 10000
 
-# Error Rates (p=0.001)
+# Error Rates (0.001 = 0.1%)
 p_1q = 0.001
 p_2q = 0.001
 p_meas = 0.001
 p_reset = 0.001
 p_idle = 0.001
 
-output_file = f"baseline_memX_std_d{distance}_r{rounds}_s{shots}_p{p_2q}.txt"
+output_file = f"baseline_memX_d{distance}_r{rounds}_s{shots}_p1q_{p_1q}_p2q_{p_2q}_pmeas_{p_meas}_preset_{p_reset}_pidle_{p_idle}.txt"
 
 # ==========================================
 # 2. Setup Circuits & Decoder
 # ==========================================
+# Ideal circuit for logical extraction
 ideal_circuit = stim.Circuit.generated(
     "surface_code:rotated_memory_x",
     rounds=rounds,
@@ -34,6 +35,7 @@ ideal_circuit = stim.Circuit.generated(
     before_round_data_depolarization=0
 )
 
+# Decoder circuit with approximated noise model
 decoder_circuit = stim.Circuit.generated(
     "surface_code:rotated_memory_x",
     rounds=rounds,
@@ -41,14 +43,14 @@ decoder_circuit = stim.Circuit.generated(
     after_clifford_depolarization=p_2q,
     after_reset_flip_probability=p_reset,
     before_measure_flip_probability=p_meas,
-    before_round_data_depolarization=p_idle
+    before_round_data_depolarization=p_1q + p_idle # consider p_1q and p_idle together
 )
 
 dem = decoder_circuit.detector_error_model(decompose_errors=True)
 matcher = pymatching.Matching.from_detector_error_model(dem)
 
 # ==========================================
-# 3. [FIXED] Detector Classification (X vs Z)
+# 3. Detector Classification (X vs Z)
 # ==========================================
 detector_coords = ideal_circuit.get_detector_coordinates()
 x_det_indices = []
@@ -61,7 +63,6 @@ for k, v in detector_coords.items():
     time_coords.append(t)
     
     # Distinguish by the parity of the sum of coordinates divided by 2 (Checkerboard pattern)
-    # This method generally separates X/Z in Rotated Code.
     if int(x + y) // 2 % 2 == 0:
         z_det_indices.append(k)
     else:
@@ -89,19 +90,31 @@ total_logical_errors = 0
 # ==========================================
 # 5. Helper Functions
 # ==========================================
+# 1Q Pauli Errors
 def get_random_pauli_error_gate():
     r = random.random()
-    if r < 0.333: return "X_ERROR"
-    elif r < 0.666: return "Y_ERROR"
-    else: return "Z_ERROR"
+    if r < 0.333: return "X"
+    elif r < 0.666: return "Y"
+    else: return "Z"
 
-def inject_error(circuit, targets, p, type_key):
+# 2Q Correlated Pauli Errors (15 possibilities: IX ... ZZ)
+PAULI_PAIRS = []
+for p1 in ["I", "X", "Y", "Z"]:
+    for p2 in ["I", "X", "Y", "Z"]:
+        if p1 == "I" and p2 == "I": continue
+        PAULI_PAIRS.append((p1, p2))
+
+def get_correlated_error_pair():
+    return random.choice(PAULI_PAIRS)
+
+def inject_1q_error(circuit, targets, p, type_key):
+    """Injects independent single-qubit errors."""
     if isinstance(targets, int): targets = [targets]
     injected = 0
     for q in targets:
         if random.random() < p:
             gate = get_random_pauli_error_gate()
-            circuit.append(gate, [q], 1.0)
+            circuit.append(gate + "_ERROR", [q], 1.0) # X_ERROR, Y_ERROR, Z_ERROR
             fault_counts[type_key] += 1
             injected += 1
     return injected
@@ -124,34 +137,66 @@ for shot_idx in range(shots):
         targets = instruction.targets_copy()
         qubit_targets = [t.value for t in targets if t.is_qubit_target]
 
-        # [Type 1] Measure (Before)
-        if name in ["M", "MX", "MY", "MZ", "MR", "MRX", "MRY", "MRZ"]:
-            inject_error(noisy_circuit, qubit_targets, p_meas, "Measure")
+        # Pass through Annotations (DETECTOR, OBSERVABLE_INCLUDE, etc.)
+        if name in ["DETECTOR", "OBSERVABLE_INCLUDE", "SHIFT_COORDS", "QUBIT_COORDS"]:
             noisy_circuit.append(instruction)
-            if name.startswith("MR"):
-                inject_error(noisy_circuit, qubit_targets, p_reset, "Reset")
+            continue
 
-        # [Type 2] Reset (After)
-        elif name in ["R", "RX", "RY", "RZ"]:
+        # [Type 1] Measure (Before Injection)
+        if name in ["M", "MX", "MY", "MZ", "MR", "MRX", "MRY", "MRZ"]:
+            # Inject error before measurement
+            inject_1q_error(noisy_circuit, qubit_targets, p_meas, "Measure")
             noisy_circuit.append(instruction)
-            inject_error(noisy_circuit, qubit_targets, p_reset, "Reset")
+            
+            # If it is an MR type (Measure + Reset), inject reset error afterwards
+            if name.startswith("MR"):
+                inject_1q_error(noisy_circuit, qubit_targets, p_reset, "Reset")
+
+        # [Type 2] Reset (After Injection)
+        elif name in ["R", "RX", "RY", "RZ"]:
+            noisy_circuit.append(instruction) # Perform Reset
+            inject_1q_error(noisy_circuit, qubit_targets, p_reset, "Reset") # Inject error after reset
         
-        # [Type 3] Idle
+        # [Type 3] Idle (TICK)
         elif name == "TICK":
             noisy_circuit.append(instruction)
-            for q in range(num_qubits):
-                # Inject error with probability /7 (p_idle / 7) per tick
-                # R -> H -> CX -> CX -> CX -> CX -> H -> MR
-                if random.random() < (p_idle / 7):
-                    noisy_circuit.append(get_random_pauli_error_gate(), [q], 1.0)
-                    fault_counts["Data Idle"] += 1
-        # [Type 4] Gates
+            # Check for Idle errors on all qubits
+            # Inject error with probability /7 (p_idle / 7) per tick
+            # R -> H -> CX -> CX -> CX -> CX -> H -> MR
+            if p_idle > 0:
+                p_tick = p_idle / 7.0
+                for q in range(num_qubits):
+                    if random.random() < p_tick:
+                        gate = get_random_pauli_error_gate()
+                        noisy_circuit.append(gate + "_ERROR", [q], 1.0)
+                        fault_counts["Data Idle"] += 1
+
+        # [Type 4] Gates (1Q & 2Q)
         else:
-            noisy_circuit.append(instruction)
+            noisy_circuit.append(instruction) # Perform Gate
+            
+            # 2Q Gates (Correlated Error Injection)
             if name in ["CX", "CZ", "CNOT", "SWAP"]:
-                inject_error(noisy_circuit, qubit_targets, p_2q, "CNOT")
+                # In Stim, 2Q gates can be defined like `CX 0 1 2 3` (multiple pairs).
+                # Process in pairs of (Control, Target).
+                for i in range(0, len(qubit_targets), 2):
+                    c = qubit_targets[i]
+                    t = qubit_targets[i+1]
+                    
+                    if random.random() < p_2q:
+                        p1, p2 = get_correlated_error_pair()
+                        # Control Qubit Error
+                        if p1 != "I":
+                            noisy_circuit.append(p1 + "_ERROR", [c], 1.0)
+                        # Target Qubit Error
+                        if p2 != "I":
+                            noisy_circuit.append(p2 + "_ERROR", [t], 1.0)
+                        
+                        fault_counts["CNOT"] += 1
+
+            # 1Q Gates (Independent Error Injection)
             elif name in ["H", "H_XY", "H_YZ", "S", "S_DAG", "SQRT_X", "SQRT_Y", "SQRT_Z", "I"]:
-                inject_error(noisy_circuit, qubit_targets, p_1q, "1-Qubit")
+                inject_1q_error(noisy_circuit, qubit_targets, p_1q, "1-Qubit")
 
     # === Simulation ===
     sampler = noisy_circuit.compile_detector_sampler()
@@ -189,7 +234,6 @@ z_hw_counts = Counter(hw_z_list)
 
 def format_hw_table(hw_counts, total_shots):
     lines = []
-    # Sort by existing keys
     sorted_keys = sorted(hw_counts.keys())
     if not sorted_keys: return "No Data"
     
@@ -233,7 +277,7 @@ with open(output_file, "w") as f:
     f.write("\n\n")
     f.write("=" * 40 + "\n\n")
     
-    f.write("=== FINAL QEC RESULTS (Sinter) ===\n")
+    f.write("=== FINAL QEC RESULTS (Sinter/Manual) ===\n")
     f.write(f"Model: Baseline (std)\n")
     f.write(f"Shots: {shots}\n")
     f.write(f"Logical Failures: {total_logical_errors}\n")
