@@ -93,6 +93,13 @@
     - **Mathematical Expression ($\pi/8$)**: The standard formula for a Z-axis rotation matrix incorporates a half-angle ($\alpha/2$) in its exponents. When we plug in our actual rotation angle $\alpha = \pi/4$, the fraction **$\pi/8$** appears in the matrix elements, which is why it is conventionally called the $\pi/8$ gate.
 
 $$
+R_z(\alpha) = \left[ \begin{array}{cc}
+e^{-i\frac{\alpha}{2}} & 0 \\
+0 & e^{i\frac{\alpha}{2}}
+\end{array} \right]
+$$
+
+$$
 R_z\left(\frac{\pi}{4}\right) = \left[ \begin{array}{cc}
 e^{-i\frac{\pi}{8}} & 0 \\
 0 & e^{i\frac{\pi}{8}}
