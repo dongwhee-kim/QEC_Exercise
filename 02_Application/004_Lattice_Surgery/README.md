@@ -10,10 +10,15 @@
 
 # Pauli-Based Computation (PBC)
 - A framework to facilitate the mapping of quantum programs to surface codes.
--
-
-1) Pauli Product Measurements (PPM)
-- 
+- Conversion: Quantum program -> Sequence consisting of **only pauli product measurements [1]**
+- The Compilation Process
+![PBC Compilation Overview](https://blog-assets.cloud.pennylane.ai/compilations/pauli-based-computation/overview.png?w=828)
+    - 1) **Input: Circuit (Clifford + T)** -> Any circuit can always be approximated to arbitrary precision with the (Clifford + T) gate set.
+    - 2) **Intermediate representation** -> Quantum circuits are represented by a small set of building blocks, namely Pauli product measurements (PPMs) $\langle P \rangle$ and Pauli product rotations (PPRs) $e^{-i\phi P}$. The angle $\phi$ dictates how they are processed:
+        - 🟧 **Clifford operators (angles $\pm\pi/4$)**: All such operators can be commuted to the right of the circuit and merged with PPMs.
+        - 🟨 **T-gates / Non-Clifford operators (angles $\pm\pi/8$)**: All such operators can be realized with a magic state injection, leaving only classically controlled Clifford and Pauli operators that can be merged into PPMs again.
+    - 3) **Output: Circuit (only PPM)** -> Reducing a (Clifford + T) circuit -> non-Clifford PPR + PPM. 
+    - 4) The non-Clifford PPRs -> sequence consisting of **only PPMs**.
 
 
 ![A Game of Surface Codes](https://pennylane.ai/demos/tutorial_game_of_surface_codes)
@@ -47,16 +52,16 @@
 - If a physical error occurs, the state is kicked *out* of the codespace, triggering detection.
 - **E.g.,** Translating a single logical $|0\rangle_L$ into a complex, entangled grid of many physical qubits on a surface code patch.
 
-**Pauli Product Measurements (PPM)**
+**Pauli Product Measurements (PPM) [1]**
 - A macroscopic **Joint Measurement** that checks the parity of a multi-qubit Pauli operator (e.g., $X \otimes Z \otimes Y$) across several logical qubits.
 - A **physically executable** operation.
 - The **only physical operation** that can be executed directly and fault-tolerantly on surface code hardware.
 
-**Pauli Product Rotations (PPR)**
+**Pauli Product Rotations (PPR) [1]**
 - A quantum rotation that uses a Pauli operator as its axis to rotate qubits by a specific angle.
-- **Clifford PPRs** (e.g., $\pi/4$ rotations) can be easily handled by classical bookkeeping without physical hardware operations.
+- **Clifford PPRs** (e.g., multiples of $\pi/4$ rotations, multipples of $\pi/2$ rotations) can be easily handled by classical bookkeeping without physical hardware operations.
 - **Non-Clifford PPRs** (e.g., $\pi/8$ rotations) are physically impossible to execute directly on surface code hardware. 
-- e.g., **T gate** (a representative non-Clifford operation).
+- e.g., **T gate** (a representative non-Clifford operation) -> multiples of $\pi/8$ rotations. Can be realized with a magic state injection + clifford gate
 - **Non-Clifford PPR = PPM + Magic State** (Figure 7 of **[4]**).
 - So, if **magic states are available**, the only operations required for universal quantum computing are **Pauli product measurements**.
 
