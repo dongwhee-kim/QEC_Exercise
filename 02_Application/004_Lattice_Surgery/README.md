@@ -91,9 +91,12 @@
     - $$|\psi\rangle = \cos\left(\frac{\theta}{2}\right)|0\rangle + e^{i\phi}\sin\left(\frac{\theta}{2}\right)|1\rangle$$
     - **Actual Rotation ($\pi/4$)**: In the standard qubit state equation $|\psi\rangle = \cos\left(\frac{\theta}{2}\right)|0\rangle + e^{i\phi}\sin\left(\frac{\theta}{2}\right)|1\rangle$, the phase $\phi$ physically rotates by exactly **$\pi/4$ (45 degrees)**.
     - **Mathematical Expression ($\pi/8$)**: The standard formula for a Z-axis rotation matrix incorporates a half-angle ($\alpha/2$) in its exponents. When we plug in our actual rotation angle $\alpha = \pi/4$, the fraction **$\pi/8$** appears in the matrix elements, which is why it is conventionally called the $\pi/8$ gate.
-    $$
-    R_z\left(\frac{\pi}{4}\right) = \begin{pmatrix} e^{-i\frac{\pi}{8}} & 0 \\ 0 & e^{i\frac{\pi}{8}} \end{pmatrix}
-    $$
+    - **Mathematical Expression ($\pi/8$)**: ...
+      ```math
+      R_z(\pi/4) = 
+      [ e^{-i\pi/8}     0      ]
+      [     0       e^{i\pi/8} ]
+      ```
 
 ### Comparison Table: Clifford vs. Non-Clifford Gates
 
