@@ -10,12 +10,13 @@
 
 # Pauli-Based Computation (PBC)
 - A framework to facilitate the mapping of quantum programs to surface codes.
-- Conversion (Final Result): Quantum program (including **non-clifford gates**) -> Sequence consisting of **only pauli product measurements [1]**
-- 🟧 **Clifford operators (angles $\pm\pi/4$)**: All such operators can be commuted to the right of the circuit and merged with PPMs.
-- 🟨 **T-gates / Non-Clifford operators (angles $\pm\pi/8$)**: All such operators can be realized with a magic state injection, leaving only classically controlled Clifford and Pauli operators that can be merged into PPMs again.
-- 🟦 **Blue boxes:** Terminal measurements at the very end of the circuit.
+- Conversion (Final Result): Quantum program (including **non-clifford gates**) -> Sequence consisting of **only pauli product measurements (PPMs) [1]**
+- **Conclusion: PPMs are sufficient for universal computing**
 - The Compilation Process
 ![PBC Compilation Overview](https://blog-assets.cloud.pennylane.ai/compilations/pauli-based-computation/overview.png?w=828)
+    - 🟧 **Clifford operators (angles $\pm\pi/4$)**: All such operators can be commuted to the right of the circuit and merged with PPMs.
+    - 🟨 **T-gates / Non-Clifford operators (angles $\pm\pi/8$)**: All such operators can be realized with a magic state injection, leaving only classically controlled Clifford and Pauli operators that can be merged into PPMs again.
+    - 🟦 **Blue boxes:** Terminal measurements at the very end of the circuit.
     - 1) **Input: Circuit (Clifford + T)** -> Any circuit can always be approximated to arbitrary precision with the (Clifford + T) gate set.
     - 2) **Intermediate representation** -> Quantum circuits are represented by a small set of building blocks, namely Pauli product measurements (PPMs) $\langle P \rangle$ and Pauli product rotations (PPRs) $e^{-i\phi P}$. The angle $\phi$ dictates how they are processed:
         - **Step 1: Decomposition**: The original (Clifford + T) gates are uniformly decomposed into a mixed sequence of Clifford (🟧) and non-Clifford (🟨) operations
@@ -24,9 +25,6 @@
         - **Step 4: Magic State Injection**: The remaining non-Clifford operations (🟨) are replaced by **magic state injections**.
     - 3) **Final Result (Output):** All non-Clifford PPRs are completely transformed, leaving the entire circuit as a sequence consisting of **only Pauli Product Measurements (PPMs)**.
 - **Magic state injection is essential**! Injection of magic states from auxiliary qubits is neede! **Otherwise, we obtain a circuit containing PPMs + non-clifford PPRs**.
-
-![A Game of Surface Codes](https://pennylane.ai/demos/tutorial_game_of_surface_codes)
-- Paper **[1]**
 
 ## Terms
 
