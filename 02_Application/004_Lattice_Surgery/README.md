@@ -13,7 +13,8 @@
 - Conversion (Final Result): Quantum program (including **non-clifford gates**) -> Sequence consisting of **only pauli product measurements (PPMs) [1]**
 - **Conclusion: PPMs are sufficient for universal computing**
 - The Compilation Process
-![PBC Compilation Overview](https://blog-assets.cloud.pennylane.ai/compilations/pauli-based-computation/overview.png?w=828)
+<img src="https://blog-assets.cloud.pennylane.ai/compilations/pauli-based-computation/overview.png?w=828" alt="Logical_X_Z_Operator_Merging" width="50%">
+
     - 🟧 **Clifford operators (angles $\pm\pi/4$)**: All such operators can be commuted to the right of the circuit and merged with PPMs. **Do not need to be executed on Hardware**.
     - 🟨 **T-gates / Non-Clifford operators (angles $\pm\pi/8$)**: All such operators can be realized with a magic state injection, leaving only classically controlled Clifford and Pauli operators that can be merged into PPMs again.
     - 🟦 **Blue boxes:** Terminal measurements at the very end of the circuit.
@@ -49,7 +50,8 @@
 - Top-Down Perspective: Any quantum circuit -> Clifford + T (PPRs) circuit -> PPM + Magic State -> **Only PPMs**
 
 ## Homological Measurement**: "Measure the String"
-![Logical_X_Z_Operator](https://blog-assets.cloud.pennylane.ai/demos/tutorial_lattice_surgery/main/_assets/images/logical_X_Z.png?w=828)
+<img src="https://blog-assets.cloud.pennylane.ai/demos/tutorial_lattice_surgery/main/_assets/images/logical_X_Z.png?w=828" alt="Logical_X_Z_Operator_Merging" width="50%">
+
 - When measuring a logical qubit, we do not projectively measure every single physical qubit inside the patch.
 - The Core Idea: We **only need to find and measure a single 'string' connecting one edge of the patch to the opposite edge**.
 - Why homological? Topological Equivalence Class -> The exact path this string takes does not matter. As long as it connects the corresponding boundaries, any path yields the **identical logical information.**
@@ -63,7 +65,8 @@
 ## Example - Measuring XL 'x' XL (Merge & Split two logical qubits on their X edges)
 To measure the **$X_L \otimes X_L$** between two logical qubits, we merge and split them along their **X-edges**.
 
-![Logical_X_Z_Operator_Preparation](https://blog-assets.cloud.pennylane.ai/demos/tutorial_lattice_surgery/main/_assets/images/XX1.png?w=828)
+<img src="https://blog-assets.cloud.pennylane.ai/demos/tutorial_lattice_surgery/main/_assets/images/XX1.png?w=828" alt="Logical_X_Z_Operator_Merging" width="50%">
+
 - **Step 1: Preparation (Initialization)**
 - Alignment: Align the X-edges of the two patches to face each other, separated by a column of unused intermediate data qubits.
 - Initialization: Initialize these intermediate qubits in the $|0\rangle$ (Z-basis) state.
@@ -92,10 +95,12 @@ To measure the **$X_L \otimes X_L$** between two logical qubits, we merge and sp
 - Integration: Include the intermediate data qubits in the standard error correction cycles (measuring the new X and Z stabilizers).
 - Extraction: The two patches temporarily become one. The product of the newly formed stabilizers along this boundary (indicated by the red dots) corresponds exactly to the eigenvalue of $X_L \otimes X_L$.
 
-![Logical_X_Z_Operator_Merging](https://blog-assets.cloud.pennylane.ai/demos/tutorial_lattice_surgery/main/_assets/images/XX3.png?w=828)
+<img src="https://blog-assets.cloud.pennylane.ai/demos/tutorial_lattice_surgery/main/_assets/images/XX3.png?w=828" alt="Logical_X_Z_Operator_Merging" width="50%">
+
 Now that we retrieved our measurement result $X_L \otimes X_L$, we want to restore the two qubits, which is achieved by lattice splitting. This, on the other hand, is done by measuring the intermediate data qubits in the **Z basis**.
 
-![Logical_X_Z_Operator_Splitting](https://blog-assets.cloud.pennylane.ai/demos/tutorial_lattice_surgery/main/_assets/images/XX4.png?w=828)
+<img src="https://blog-assets.cloud.pennylane.ai/demos/tutorial_lattice_surgery/main/_assets/images/XX4.png?w=828" alt="Logical_X_Z_Operator_Merging" width="50%">
+
 - **Step 3: Splitting**
 - Restoration: Measure the intermediate data qubits in the Z-basis.
 - **Why Z-basis**? Measuring in the Z-basis projectively collapses the qubits back to their initialized state. This physical collapse cleanly "snaps" the connecting X-string without injecting random X-errors into the boundary Z-arches.
@@ -113,28 +118,30 @@ Now that we retrieved our measurement result $X_L \otimes X_L$, we want to resto
         - 2. Twist Defect Generation: Merge this deformed patch with an auxiliary qubit. The mismatched boundaries force the creation of a topological Twist Defect.
         - 3. Parity Extraction: Inside this twisted space, the stabilizer operators become mixed (e.g., $Z \otimes X$). Measuring these mixed stabilizers allows us to safely extract the $Y$ eigenvalue.
 
-![Logical_X_Z_Extension1](https://blog-assets.cloud.pennylane.ai/demos/tutorial_lattice_surgery/main/_assets/images/extend1.png?w=828)
+<img src="https://blog-assets.cloud.pennylane.ai/demos/tutorial_lattice_surgery/main/_assets/images/extend1.png?w=828" alt="Logical_X_Z_Operator_Merging" width="50%">
 
-![Logical_X_Z_Extension2](https://blog-assets.cloud.pennylane.ai/demos/tutorial_lattice_surgery/main/_assets/images/extend2.png?w=828)
+<img src="https://blog-assets.cloud.pennylane.ai/demos/tutorial_lattice_surgery/main/_assets/images/extend2.png?w=828" alt="Logical_X_Z_Operator_Merging" width="50%">
 
-![Logical_X_Z_Extension3](https://blog-assets.cloud.pennylane.ai/demos/tutorial_lattice_surgery/main/_assets/images/extend3.png?w=828)
+<img src="https://blog-assets.cloud.pennylane.ai/demos/tutorial_lattice_surgery/main/_assets/images/extend3.png?w=828" alt="Logical_X_Z_Operator_Merging" width="50%">
+
 - **Step 1: Patch Extension (Expanding the Qubit)**
 - Concept: Increase the physical footprint of the logical qubit.
 - Example (Extending Z-edge): Initialize an adjacent column of unused data qubits in $|0\rangle$ and run $d$ error correction cycles. The logical information now "slides" and encompasses this larger area.
 
-![Logical_X_Z_Corner_Moving](https://blog-assets.cloud.pennylane.ai/demos/tutorial_lattice_surgery/main/_assets/images/corner_moving.png?w=828)
+<img src="https://blog-assets.cloud.pennylane.ai/demos/tutorial_lattice_surgery/main/_assets/images/corner_moving.png?w=828" alt="Logical_X_Z_Operator_Merging" width="50%">
+
 - **Step 2: Edge Reorientation (Changing Boundary Types)**
 - Concept: Alter the property of the boundary without changing the logical bulk information.
 - To measure Y, we need a patch that has both an X-edge and a Z-edge on the same side 🟪. We re-orient a segment of an X-edge into a Z-edge by introducing triangle-shaped stabilizers. This acts as a buffer zone, ensuring the neighboring X and Z edges commute smoothly by overlapping on exactly two data qubits.
 
-![Logical_X_Z_Y_Measurement](https://blog-assets.cloud.pennylane.ai/demos/tutorial_lattice_surgery/main/_assets/images/y_measurement.png?w=828)
+<img src="https://blog-assets.cloud.pennylane.ai/demos/tutorial_lattice_surgery/main/_assets/images/y_measurement.png?w=828" alt="Logical_X_Z_Operator_Merging" width="50%">
+
 - **Step 3: Y Measurement via Twist Defects**
 - Setup: Create a re-oriented patch containing both X and Z edges on one face 🟪. Initialize an auxiliary qubit in $|0\rangle$ parallel to it.
 - Lattice Merging: Merge the two patches. Because we are forcing a boundary mismatch (X-edges meeting Z-edges), the system generates a topological anomaly called a Twist Defect (highlighted in purple).
 - Measure ($Y_L$): Inside this twist defect, the spatial geometry is warped, allowing mixed $Z \otimes X$ stabilizers to emerge without breaking commutation rules (e.g., $[ZZ, XY] = 0$). Measuring these mixed stabilizers effectively measures the **simultaneous $XZ$** parity, yielding the exact **$Y_L$ measurement result**.
 
-![Logical_X_Z_Twist_Boundaries](https://blog-assets.cloud.pennylane.ai/demos/tutorial_lattice_surgery/main/_assets/images/twist_boundaries.png?w=828)
-
+<img src="https://blog-assets.cloud.pennylane.ai/demos/tutorial_lattice_surgery/main/_assets/images/twist_boundaries.png?w=828" alt="Logical_X_Z_Operator_Merging" width="50%">
 
 ## Terms
 
