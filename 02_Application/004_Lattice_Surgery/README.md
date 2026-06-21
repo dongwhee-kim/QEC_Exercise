@@ -86,7 +86,8 @@ To measure the **$X_L \otimes X_L$** between two logical qubits, we merge and sp
         a5 ◯ ------------------------ ◯ q5 ------------------------ ◯ b5
 ```
 
-![Logical_X_Z_Operator_Merging](https://blog-assets.cloud.pennylane.ai/demos/tutorial_lattice_surgery/main/_assets/images/XX2.png?w=828)
+<img src="https://blog-assets.cloud.pennylane.ai/demos/tutorial_lattice_surgery/main/_assets/images/XX2.png?w=828" alt="Logical_X_Z_Operator_Merging" width="50%">
+
 - **Step 2: Merging**
 - Integration: Include the intermediate data qubits in the standard error correction cycles (measuring the new X and Z stabilizers).
 - Extraction: The two patches temporarily become one. The product of the newly formed stabilizers along this boundary (indicated by the red dots) corresponds exactly to the eigenvalue of $X_L \otimes X_L$.
