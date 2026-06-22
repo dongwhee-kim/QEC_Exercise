@@ -143,6 +143,8 @@ Now that we retrieved our measurement result $X_L \otimes X_L$, we want to resto
 
 <img src="https://blog-assets.cloud.pennylane.ai/demos/tutorial_lattice_surgery/main/_assets/images/twist_boundaries.png?w=828" alt="Logical_X_Z_Operator_Merging" width="50%">
 
+## $\color{red}{\text{Bottleneck! : Distillation Throughput < T-gate Consumption ➔ System Stall (Understand Space-time trade-off, Understand Magic State Factory Count)}}$
+
 ## Toward Full Quantum Computer (T-gate count -> Fixed $10^8$ T-gate)
 - Parallelized distillation blocks to finish computations in a time proportional to the **T count**.
 - T-count optimized
