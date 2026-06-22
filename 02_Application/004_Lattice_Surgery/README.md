@@ -143,6 +143,40 @@ Now that we retrieved our measurement result $X_L \otimes X_L$, we want to resto
 
 <img src="https://blog-assets.cloud.pennylane.ai/demos/tutorial_lattice_surgery/main/_assets/images/twist_boundaries.png?w=828" alt="Logical_X_Z_Operator_Merging" width="50%">
 
+## Toward Full Quantum Computer (T-gate count -> Fixed $10^8$ T-gate)
+- Parallelized distillation blocks to finish computations in a time proportional to the **T count**.
+- T-count optimized
+- Core Concept: How to calculate and balance the **Space (Qubit count) vs. Time (Computation duration) trade-off**, given a target total **T-gate count** and **physical error rate ($p$)**.
+- Centralized Model (one massive data region fed by multiple magic state factories)
+- Benchmark Setup
+    - Target Algorithm: $10^8$ T-gate count (100M magic states needed) and $10^6$ T-depth (1M sequential T-steps).
+    - Hardware Assumptions: 1 Code Cycle = 1 µs. Physical error rate $p = 10^{-3}$ (noisy) or $p = 10^{-4}$ (clean).
+    - Success Criterion: < 1% probability of a single error occurring across all $10^8$ T-gates (an extremely strict constraint).
+- 3-Step Design Blueprint
+    - **Step 1: Select Distillation Protocol**
+        - Calculate the **required error rate per magic state** to meet the total success criterion (e.g., < 1% total error / $10^8$ gates = $< 10^{-10}$ error rate per state). 
+        - Choose the most efficient factory protocol (e.g., 15-to-1, 20-to-4, or Concatenation) that achieves this target.
+    - **Step 2: Determine Code Distance ($d$)**
+        - Even with pure magic states, data qubits must survive the entire $10^6$ T-depth.
+        - Calculate and assign a sufficient code distance ($d$) to act as a robust shield against logical errors during data block operations.
+    - **Step 3: Space-Time Trade-off (Scheduling Strategy)** -> Determine the optimal **execution strategy** based on available hardware resources:
+        - Time-Optimized: Build numerous distillation blocks and pair them with 'Fast' data blocks. Consumes **millions of physical qubits** but finishes the computation **rapidly**.
+        - Space-Optimized: Build minimal distillation blocks (1-2) and pair them with 'Compact' data blocks. Reduces the footprint to **hundreds of thousands of physical qubits**, but the **computation may take weeks (slow)** to complete.
+
+## What about T-gate depth? (Time-optimized)
+- **Core Concept:** Pushing the limits of computation speed by shifting the bottleneck from **T-count** to the critical path length (**T-depth**) using a highly **parallel, decentralized architecture**.
+- **T-count vs. T-depth:** - An algorithm requiring $10^8$ T-gates is rarely a single sequential line. It is often structured in layers. For example, $10^6$ layers (**T-depth**), where each layer contains 100 independent T-gates.
+    - If the hardware can process 100 T-gates **simultaneously**, the execution time scales with $10^6$ rather than $10^8$, making the computation **100x faster**.
+- **The "Unit" Architecture:** To maximize this parallelism, the paper introduces a decentralized, modular design.
+    - **Unit = [Data Block] + [Dedicated Distillation Block]**
+    - Rather than a centralized model, each data block is tightly paired with its **own dedicated magic state factory**.
+    - Conceptually similar to a CPU core paired with its own dedicated L1 cache.
+- **The Trade-off: Increased Space-Time Cost** -> Absolute speed comes at a structural price:
+    - **Extreme Space Footprint:** Running 100 Units simultaneously requires an enormous number of physical qubits. Furthermore, to maximize speed, these units rely on 'Fast' data blocks, which drastically inflates tile consumption.
+    - **Routing Overhead:** Orchestrating Lattice Surgery across 100 active Units creates spatial challenges. Entangling logical qubits over long physical distances requires extra tiles for routing pathways to prevent traffic collisions.
+    - **Conclusion:** The overall Space-Time Cost (**Total Qubits $\times$ Total Cycles**) slightly increases (becomes less efficient overall) compared to the T-count optimized model. However, **the actual computation time is drastically minimized** because it scales proportional to the T-depth rather than the T-count.
+- <span style="color:red">Distributed Quantum Computing (DQC)</span>
+
 ## Terms
 
 **Measurement**
