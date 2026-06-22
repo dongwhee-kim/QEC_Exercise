@@ -175,7 +175,7 @@ Now that we retrieved our measurement result $X_L \otimes X_L$, we want to resto
     - **Extreme Space Footprint:** Running 100 Units simultaneously requires an enormous number of physical qubits. Furthermore, to maximize speed, these units rely on 'Fast' data blocks, which drastically inflates tile consumption.
     - **Routing Overhead:** Orchestrating Lattice Surgery across 100 active Units creates spatial challenges. Entangling logical qubits over long physical distances requires extra tiles for routing pathways to prevent traffic collisions.
     - **Conclusion:** The overall Space-Time Cost (**Total Qubits $\times$ Total Cycles**) slightly increases (becomes less efficient overall) compared to the T-count optimized model. However, **the actual computation time is drastically minimized** because it scales proportional to the T-depth rather than the T-count.
-- <span style="color:red">Distributed Quantum Computing (DQC)</span>
+- $\color{red}{\text{Distributed Quantum Computing (DQC)}}$
 
 ## Terms
 
