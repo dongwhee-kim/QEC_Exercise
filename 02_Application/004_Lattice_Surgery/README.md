@@ -177,15 +177,6 @@ Now that we retrieved our measurement result $X_L \otimes X_L$, we want to resto
     - **Conclusion:** The overall Space-Time Cost (**Total Qubits $\times$ Total Cycles**) slightly increases (becomes less efficient overall) compared to the T-count optimized model. However, **the actual computation time is drastically minimized** because it scales proportional to the T-depth rather than the T-count.
 
 ## $\color{red}{\text{Distributed Quantum Computing (DQC)}}$
-- Core Concept: 작은 양자 컴퓨터 여러 대를 네트워크로 묶어서 하나의 거대한 양자 컴퓨터처럼 쓰자(Multi-chip / Distributed Computing). 기존: 수백만, 수천만 개의 큐비트를 가진 거대한 단일 칩(Single chip)을 어떻게 설계할까?
-- In order to speed up an n-qubit quantum computation beyond 1 per T gate, we parallelize T layers using units
-- software-based entanglement distillation **[12]** can be used to convert a large number of low-fidelity Bell pairs into fewer high-fidelity Bell pairs. Entanglement distillation increases the qubit count.
-- 2. Entanglement Distillation (통신 노이즈 극복): Inter-chip operation: 칩과 칩 사이를 연결하여 Bell pair를 생성하는 과정은 당연히 단일 칩 내부 (Intra-chip)보다 노이즈가 심합니다(Low-fidelity). 저자는 이를 어떻게 극복할까요?
-In order to fully exploit
-the space-time trade-offs discussed in this section, the
-input circuit should be optimized for T depth
-
-## $\color{red}{\text{Distributed Quantum Computing (DQC)}}$
 - **Core Concept:** Shifting the paradigm. Building a single, massive monolithic chip (requiring millions, billions of qubits) -> Networking multiple smaller quantum computers to act as one cohesive system (**Multi-chip / Distributed Computing**).
 - **Extreme Speedup:** To speed up an n-qubit quantum computation beyond the physical limit of 1 cycle per T-gate, the system **parallelizes T-layers** across completely independent **Units**, which can be located on separate physical chips.
 - **Overcoming Inter-chip Noise:** Sharing entangled states (Bell pairs) between separate chips naturally suffers from higher noise (low-fidelity) compared to intra-chip operations.
