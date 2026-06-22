@@ -163,7 +163,7 @@ Now that we retrieved our measurement result $X_L \otimes X_L$, we want to resto
         - Time-Optimized: Build numerous distillation blocks and pair them with 'Fast' data blocks. Consumes **millions of physical qubits** but finishes the computation **rapidly**.
         - Space-Optimized: Build minimal distillation blocks (1-2) and pair them with 'Compact' data blocks. Reduces the footprint to **hundreds of thousands of physical qubits**, but the **computation may take weeks (slow)** to complete.
 
-## What about T-gate depth? (Time-optimized)
+## What about T-gate depth? (Time-optimal)
 - **Core Concept:** Pushing the limits of computation speed by shifting the bottleneck from **T-count** to the critical path length (**T-depth**) using a highly **parallel, decentralized architecture**.
 - **T-count vs. T-depth:** - An algorithm requiring $10^8$ T-gates is rarely a single sequential line. It is often structured in layers. For example, $10^6$ layers (**T-depth**), where each layer contains 100 independent T-gates.
     - If the hardware can process 100 T-gates **simultaneously**, the execution time scales with $10^6$ rather than $10^8$, making the computation **100x faster**.
@@ -175,7 +175,37 @@ Now that we retrieved our measurement result $X_L \otimes X_L$, we want to resto
     - **Extreme Space Footprint:** Running 100 Units simultaneously requires an enormous number of physical qubits. Furthermore, to maximize speed, these units rely on 'Fast' data blocks, which drastically inflates tile consumption.
     - **Routing Overhead:** Orchestrating Lattice Surgery across 100 active Units creates spatial challenges. Entangling logical qubits over long physical distances requires extra tiles for routing pathways to prevent traffic collisions.
     - **Conclusion:** The overall Space-Time Cost (**Total Qubits $\times$ Total Cycles**) slightly increases (becomes less efficient overall) compared to the T-count optimized model. However, **the actual computation time is drastically minimized** because it scales proportional to the T-depth rather than the T-count.
-- $\color{red}{\text{Distributed Quantum Computing (DQC)}}$
+
+## $\color{red}{\text{Distributed Quantum Computing (DQC)}}$
+- Core Concept: 작은 양자 컴퓨터 여러 대를 네트워크로 묶어서 하나의 거대한 양자 컴퓨터처럼 쓰자(Multi-chip / Distributed Computing). 기존: 수백만, 수천만 개의 큐비트를 가진 거대한 단일 칩(Single chip)을 어떻게 설계할까?
+- In order to speed up an n-qubit quantum computation beyond 1 per T gate, we parallelize T layers using units
+- software-based entanglement distillation **[12]** can be used to convert a large number of low-fidelity Bell pairs into fewer high-fidelity Bell pairs. Entanglement distillation increases the qubit count.
+- 2. Entanglement Distillation (통신 노이즈 극복): Inter-chip operation: 칩과 칩 사이를 연결하여 Bell pair를 생성하는 과정은 당연히 단일 칩 내부 (Intra-chip)보다 노이즈가 심합니다(Low-fidelity). 저자는 이를 어떻게 극복할까요?
+In order to fully exploit
+the space-time trade-offs discussed in this section, the
+input circuit should be optimized for T depth
+
+## $\color{red}{\text{Distributed Quantum Computing (DQC)}}$
+- **Core Concept:** Shifting the paradigm. Building a single, massive monolithic chip (requiring millions, billions of qubits) -> Networking multiple smaller quantum computers to act as one cohesive system (**Multi-chip / Distributed Computing**).
+- **Extreme Speedup:** To speed up an n-qubit quantum computation beyond the physical limit of 1 cycle per T-gate, the system **parallelizes T-layers** across completely independent **Units**, which can be located on separate physical chips.
+- **Overcoming Inter-chip Noise:** Sharing entangled states (Bell pairs) between separate chips naturally suffers from higher noise (low-fidelity) compared to intra-chip operations.
+    - **Solution:** Employs **software-based Entanglement Distillation [12]** to convert a large number of noisy, low-fidelity Bell pairs into a few high-fidelity Bell pairs.
+    - **Trade-off:** While this increases the total qubit count (requiring dedicated entanglement distillation tiles), it does not slow down the overall computation, as the distillation time can be **hidden** behind the unit's preparation cycle (**Latency Hiding**).
+- **Circular Topology Optimization (Fig. 31 in [1]):**  Arranging these networked quantum computers in a **circular (ring) topology** eliminates the "first" and "last" units. This continuous data flow halves the required storage tiles for correction qubits and reduces the total number of units required to achieve **time-optimality (& space save)**.
+- **Algorithmic Requirement:** To fully exploit the extreme space-time trade-offs of this distributed architecture, the input quantum circuit must be strictly compiled and optimized for **minimal T-depth** rather than just minimal T-count.
+
+## Trade-offs Beyond Clifford+T
+- **Core Concept:** For practical algorithms (e.g., Quantum Chemistry requiring $10^{15}$ operations), the overhead of purely using the standard Clifford+T gate set becomes a critical bottleneck.
+- **Why? Due to the Decomposition Overhead:** Single CCZ gate -> Multi T-gate
+- **Solution 1: Dedicated multi-controlled pauli gates Distillation:**
+    - Multi-controlled pauli gates are extensively used in quantum algorithms (e.g., Toffoli gates, CCZ gates).
+    - Instead of breaking one CCZ gate into multi T-gates, it is far more space-time efficient to build a **dedicated factory** that directly distills Toffoli ($|CCZ\rangle$) magic states.
+    - Efficiency: **Single CCZ gate distillation factory > Multi T gate distillation factory**
+- **Solution 2: Dealing with Arbitrary Rotations (e.g., [Phase Gradient](https://pennylane.ai/compilation/phase-gradient)):**
+    - Goal: Implement arbitrary phase rotations ($R_z(\theta)$) without the massive overhead of approximating them with hundreds of T-gates.
+    - **Catalytic Resource:** Unlike T-states which are consumed, the phase gradient state acts as a **catalyst**. It aids in performing the rotation and is returned to its original state intact, allowing for reuse.
+    - **Space-Time Trade-off:** Trades expensive sequential rotation gates (Time) for additional auxiliary encoding qubits (Space).
+    - **Scheduling Impact:** Highly effective for **Multiplexed Rotations**, where a dynamic scheduler can batch multiple rotation operations and route them to a shared phase gradient resource block for extreme efficiency.
 
 ## Terms
 
@@ -367,3 +397,5 @@ $$
 **[10]** Bravyi, Sergey, and Alexei Kitaev. "Universal quantum computation with ideal Clifford gates and noisy ancillas." Physical Review A—Atomic, Molecular, and Optical Physics 71.2 (2005): 022316.
 
 **[11]** J. I. Hall, Notes on Coding Theory Chapter 6: Modifying Codes, https://users.math.msu.edu/users/jhall/classes/codenotes/Mod.pdf, accessed: 2019-01-30.
+
+**[12]** C. H. Bennett, G. Brassard, S. Popescu, B. Schumacher, J. A. Smolin, and W. K. Wootters, Purification of noisy entanglement and faithful teleportation via noisy channels, Phys. Rev. Lett. 76, 722 (1996).
