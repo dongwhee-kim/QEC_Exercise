@@ -6,7 +6,7 @@
 
 # Overview [1]
 
-![Quantum_Pipeline](images/Quantum_algorithm _implementation _pipeline.png)
+![Quantum_Pipeline](images/Quantum_algorithm_implementation_pipeline.png)
 
 # References
 
